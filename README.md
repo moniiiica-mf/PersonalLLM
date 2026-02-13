@@ -1,4 +1,4 @@
-# monii
+# Monica's LLM
 
 A privacy-safe, single-page ChatGPT/Claude-like demo interface built with vanilla HTML, CSS, and JavaScript. No frameworks, no build step, no data storage — just open `index.html` in your browser.
 

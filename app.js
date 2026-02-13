@@ -1,5 +1,5 @@
 /**
- * monii — Privacy-Safe Demo Interface
+ * Monica's LLM — Privacy-Safe Demo Interface
  *
  * A single-page ChatGPT/Claude-like chat interface that:
  * - Operates entirely in memory (no persistence whatsoever)
