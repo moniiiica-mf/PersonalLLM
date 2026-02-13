@@ -25,7 +25,19 @@
   const sendBtn = $("#sendBtn");
   const newChatBtn = $("#newChatBtn");
   const toastContainer = $("#toastContainer");
-  const chips = document.querySelectorAll(".chip");
+  const chipsContainer = $("#chips");
+
+  // ===== Prompt Chip Pool (randomly selected on each load) =====
+  const ALL_PROMPTS = [
+    "Let's have a random chat",
+    "Ask me a question",
+    "Guess my mood",
+    "How are you today?",
+    "What can you do?",
+    "Tell me a fun fact",
+    "Tell me a joke",
+  ];
+  const CHIPS_TO_SHOW = 4;
 
   // ===== In-Memory State (never persisted) =====
   let conversation = []; // Array of { role, content, createdAt }
@@ -33,9 +45,27 @@
 
   // ===== Init =====
   function init() {
+    renderChips();
     showLanding();
     bindEvents();
     msgInput.focus();
+  }
+
+  /** Render a random selection of prompt chips */
+  function renderChips() {
+    // Shuffle and pick a subset
+    const shuffled = ALL_PROMPTS.slice().sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, CHIPS_TO_SHOW);
+
+    chipsContainer.textContent = "";
+    selected.forEach((prompt) => {
+      const btn = document.createElement("button");
+      btn.className = "chip";
+      btn.setAttribute("role", "listitem");
+      btn.setAttribute("data-prompt", prompt);
+      btn.textContent = prompt;
+      chipsContainer.appendChild(btn);
+    });
   }
 
   // ===== UI Rendering =====
@@ -142,16 +172,16 @@
     // Auto-resize textarea
     msgInput.addEventListener("input", autoResize);
 
-    // Prompt chips
-    chips.forEach((chip) => {
-      chip.addEventListener("click", () => {
-        const prompt = chip.getAttribute("data-prompt");
-        if (prompt) {
-          msgInput.value = prompt;
-          autoResize();
-          handleSend();
-        }
-      });
+    // Prompt chips (delegated since chips are generated dynamically)
+    chipsContainer.addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip) return;
+      const prompt = chip.getAttribute("data-prompt");
+      if (prompt) {
+        msgInput.value = prompt;
+        autoResize();
+        handleSend();
+      }
     });
 
     // New chat
@@ -220,10 +250,11 @@
     sendBtn.disabled = val;
   }
 
-  /** Handle new chat — clears in-memory conversation */
+  /** Handle new chat — clears in-memory conversation and rotates chips */
   function handleNewChat() {
     conversation = [];
     messagesEl.textContent = "";
+    renderChips();
     showLanding();
     msgInput.value = "";
     autoResize();
@@ -257,6 +288,46 @@
         "Hey hey! Nice to see you. What would you like to talk about?",
         "Hi there! I'm Monica's LLM — a friendly little demo assistant. What's up?",
       ]);
+    }
+
+    // --- Random chat ---
+    if (lower.includes("random chat") || lower.includes("let's chat") || lower.includes("lets chat")) {
+      const topics = [
+        "Okay, here's one — if you could have dinner with anyone, living or not, who would it be? I'm genuinely curious!",
+        "Sure, let's go! Here's a random thought: do you think dogs know they're cute, or is it just a happy accident?",
+        "I love a good random chat! Okay — what's the last thing that made you laugh really hard?",
+        "Let's do it! Quick question: if you could instantly learn any skill, what would you pick?",
+        "Alright, random topic time! What's a movie or show you could watch over and over and never get tired of?",
+        "Ooh, fun! Here's one: what's the weirdest food combination you secretly love?",
+        "Yes! Okay, here goes: do you think we'll ever live on Mars? And more importantly, would you want to?",
+      ];
+      return pick(topics);
+    }
+
+    // --- Ask me a question ---
+    if (lower.includes("ask me a question") || lower.includes("ask me something")) {
+      const questions = [
+        "Okay, here's one for you: what's something you believed as a kid that turned out to be completely wrong?",
+        "Alright! If you could wake up tomorrow with one new ability, what would it be?",
+        "Here's a good one: what's the best piece of advice you've ever received?",
+        "Hmm, let me think... Okay! What's something small that always makes your day better?",
+        "Ooh, I've got one: if your life had a theme song, what would it be?",
+        "Here goes: what's one thing on your bucket list that you haven't done yet?",
+        "I'm curious — what's something you're really proud of that you don't talk about much?",
+      ];
+      return pick(questions);
+    }
+
+    // --- Guess my mood ---
+    if (lower.includes("guess my mood") || lower.includes("guess how i feel")) {
+      const guesses = [
+        "Hmm, let me read the vibes... I'm going to say you're feeling curious and a little playful right now. Am I close?",
+        "Okay, putting on my mood-detective hat... I think you're feeling pretty good — maybe a little bored and looking for something fun? How'd I do?",
+        "Let me guess... I sense a mix of curiosity and relaxation. Like you're in that cozy \"just exploring\" kind of mood. Am I warm?",
+        "Reading the energy here... I think you're feeling lighthearted and open to surprises. Maybe a little bit mischievous? Tell me if I nailed it!",
+        "Hmm, I'm picking up on... adventurous vibes? Like you're in the mood to discover something new. Was I close, or totally off?",
+      ];
+      return pick(guesses);
     }
 
     // --- How are you / emotional check-ins ---
