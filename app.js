@@ -284,14 +284,19 @@
       ].join("\n");
     }
 
-    // --- FAQ: Wicked problem ---
-    if (lower.includes("wicked problem")) {
-      return "A wicked problem is a complex issue that is difficult or impossible to solve because of incomplete, contradictory, or changing requirements that are often hard to recognize. The term was coined by design theorists Horst Rittel and Melvin Webber in 1973. Examples include climate change, poverty, and healthcare reform.";
-    }
-
-    // --- FAQ: Design research ---
-    if (lower.includes("design research")) {
-      return "Design research is a systematic investigation into the needs, behaviors, and motivations of people in order to inform and inspire the design of products, services, and experiences.";
+    // --- Fun fact ---
+    if (lower.includes("fun fact") || lower.includes("funfact")) {
+      const facts = [
+        "Honey never spoils. Archaeologists have found 3,000-year-old honey in Egyptian tombs that was still perfectly edible.",
+        "Octopuses have three hearts and blue blood.",
+        "A group of flamingos is called a \"flamboyance.\"",
+        "Bananas are berries, but strawberries aren't.",
+        "The shortest war in history lasted 38 to 45 minutes, between Britain and Zanzibar in 1896.",
+        "A day on Venus is longer than a year on Venus.",
+        "The inventor of the Pringles can is buried in one.",
+        "There are more possible iterations of a game of chess than there are atoms in the known universe.",
+      ];
+      return facts[Math.floor(Math.random() * facts.length)];
     }
 
     // --- FAQ: Polite email ---
