@@ -1,12 +1,15 @@
 /**
- * My Personal LLM — Vanilla JS Chat Application
+ * My Personal LLM — Privacy-Safe Demo Interface
  *
- * A single-page ChatGPT/Claude-like chat interface with:
- * - Local rules-based responder ("Local Basic Brain")
- * - Optional API mode for connecting to a backend LLM
- * - localStorage persistence
- * - Safe math evaluation (no raw eval)
- * - DOM-safe rendering (no innerHTML)
+ * A single-page ChatGPT/Claude-like chat interface that:
+ * - Operates entirely in memory (no persistence whatsoever)
+ * - Never uses localStorage, sessionStorage, cookies, or IndexedDB
+ * - Never makes network requests or accesses localhost endpoints
+ * - Never inspects the filesystem or environment
+ * - Generates responses solely via in-memory rules-based logic
+ * - Renders all content safely via createElement/textContent (no innerHTML)
+ *
+ * Conversations are cleared on page refresh by design.
  */
 
 (function () {
@@ -21,100 +24,21 @@
   const msgInput = $("#msgInput");
   const sendBtn = $("#sendBtn");
   const newChatBtn = $("#newChatBtn");
-  const settingsBtnLanding = $("#settingsBtnLanding");
-  const settingsBtnTop = $("#settingsBtnTop");
-  const settingsOverlay = $("#settingsOverlay");
-  const closeSettingsBtn = $("#closeSettings");
-  const apiToggle = $("#apiToggle");
-  const apiEndpointInput = $("#apiEndpoint");
-  const apiSettingsDiv = $("#apiSettings");
-  const modeLabel = $("#modeLabel");
   const toastContainer = $("#toastContainer");
   const chips = document.querySelectorAll(".chip");
 
-  // ===== State =====
-  const STORAGE_KEY = "personalllm_conversation";
-  const SETTINGS_KEY = "personalllm_settings";
-
+  // ===== In-Memory State (never persisted) =====
   let conversation = []; // Array of { role, content, createdAt }
   let isThinking = false;
-  let settings = {
-    useApi: false,
-    apiEndpoint: "http://localhost:8080/chat",
-  };
 
   // ===== Init =====
   function init() {
-    loadSettings();
-    loadConversation();
-    renderUI();
+    showLanding();
     bindEvents();
     msgInput.focus();
   }
 
-  // ===== Persistence =====
-
-  /** Load conversation from localStorage */
-  function loadConversation() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        conversation = JSON.parse(raw);
-      }
-    } catch {
-      conversation = [];
-    }
-  }
-
-  /** Save conversation to localStorage */
-  function saveConversation() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(conversation));
-    } catch {
-      // localStorage may be full; silently ignore
-    }
-  }
-
-  /** Load settings from localStorage */
-  function loadSettings() {
-    try {
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        settings.useApi = !!saved.useApi;
-        if (saved.apiEndpoint) settings.apiEndpoint = saved.apiEndpoint;
-      }
-    } catch {
-      // Use defaults
-    }
-  }
-
-  /** Save settings to localStorage */
-  function saveSettings() {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    } catch {
-      // Silently ignore
-    }
-  }
-
   // ===== UI Rendering =====
-
-  /** Render the full UI state (landing vs. chat) */
-  function renderUI() {
-    // Update settings UI
-    apiToggle.checked = settings.useApi;
-    apiEndpointInput.value = settings.apiEndpoint;
-    apiSettingsDiv.classList.toggle("hidden", !settings.useApi);
-    modeLabel.textContent = settings.useApi ? "API Mode" : "Local Basic Brain";
-
-    if (conversation.length === 0) {
-      showLanding();
-    } else {
-      showChat();
-      renderAllMessages();
-    }
-  }
 
   /** Show the landing screen */
   function showLanding() {
@@ -130,17 +54,9 @@
     topBar.classList.remove("hidden");
   }
 
-  /** Render all messages from conversation state */
-  function renderAllMessages() {
-    // Clear existing
-    messagesEl.textContent = "";
-    conversation.forEach((msg) => appendMessageEl(msg));
-    scrollToBottom();
-  }
-
   /**
    * Append a single message element to the messages container.
-   * Uses createElement/textContent to avoid innerHTML injection.
+   * Uses createElement/textContent exclusively to avoid innerHTML injection.
    */
   function appendMessageEl(msg) {
     const row = document.createElement("div");
@@ -201,12 +117,11 @@
   }
 
   /** Show a toast notification */
-  function showToast(message, isError) {
+  function showToast(message) {
     const el = document.createElement("div");
-    el.className = "toast" + (isError ? " error" : "");
+    el.className = "toast";
     el.textContent = message;
     toastContainer.appendChild(el);
-    // Auto-remove after animation
     setTimeout(() => el.remove(), 3000);
   }
 
@@ -241,55 +156,12 @@
 
     // New chat
     newChatBtn.addEventListener("click", handleNewChat);
-
-    // Settings openers
-    settingsBtnLanding.addEventListener("click", openSettings);
-    settingsBtnTop.addEventListener("click", openSettings);
-    closeSettingsBtn.addEventListener("click", closeSettings);
-
-    // Close settings on overlay click
-    settingsOverlay.addEventListener("click", (e) => {
-      if (e.target === settingsOverlay) closeSettings();
-    });
-
-    // Close settings on Escape
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !settingsOverlay.classList.contains("hidden")) {
-        closeSettings();
-      }
-    });
-
-    // API toggle
-    apiToggle.addEventListener("change", () => {
-      settings.useApi = apiToggle.checked;
-      apiSettingsDiv.classList.toggle("hidden", !settings.useApi);
-      modeLabel.textContent = settings.useApi ? "API Mode" : "Local Basic Brain";
-      saveSettings();
-    });
-
-    // API endpoint change
-    apiEndpointInput.addEventListener("change", () => {
-      settings.apiEndpoint = apiEndpointInput.value.trim();
-      saveSettings();
-    });
   }
 
   /** Auto-resize the textarea to fit content */
   function autoResize() {
     msgInput.style.height = "auto";
     msgInput.style.height = Math.min(msgInput.scrollHeight, 150) + "px";
-  }
-
-  // ===== Settings Panel =====
-
-  function openSettings() {
-    settingsOverlay.classList.remove("hidden");
-    closeSettingsBtn.focus();
-  }
-
-  function closeSettings() {
-    settingsOverlay.classList.add("hidden");
-    msgInput.focus();
   }
 
   // ===== Chat Logic =====
@@ -305,14 +177,13 @@
     msgInput.value = "";
     autoResize();
 
-    // Add user message
+    // Add user message to in-memory conversation
     const userMsg = {
       role: "user",
       content: text,
       createdAt: new Date().toISOString(),
     };
     conversation.push(userMsg);
-    saveConversation();
 
     // Transition to chat view if first message
     if (conversation.length === 1) {
@@ -322,29 +193,25 @@
     appendMessageEl(userMsg);
     scrollToBottom();
 
-    // Generate response
+    // Generate response with simulated delay
     setThinking(true);
     showTyping();
 
-    generateResponse(text)
-      .then((reply) => {
-        hideTyping();
-        setThinking(false);
+    const delayMs = 400 + Math.random() * 600;
+    setTimeout(() => {
+      hideTyping();
+      setThinking(false);
 
-        const assistantMsg = {
-          role: "assistant",
-          content: reply,
-          createdAt: new Date().toISOString(),
-        };
-        conversation.push(assistantMsg);
-        saveConversation();
-        appendMessageEl(assistantMsg);
-        scrollToBottom();
-      })
-      .catch(() => {
-        hideTyping();
-        setThinking(false);
-      });
+      const reply = localBrain(text);
+      const assistantMsg = {
+        role: "assistant",
+        content: reply,
+        createdAt: new Date().toISOString(),
+      };
+      conversation.push(assistantMsg);
+      appendMessageEl(assistantMsg);
+      scrollToBottom();
+    }, delayMs);
   }
 
   /** Enable/disable the send button and thinking state */
@@ -353,88 +220,22 @@
     sendBtn.disabled = val;
   }
 
-  /** Handle new chat */
+  /** Handle new chat — clears in-memory conversation */
   function handleNewChat() {
     conversation = [];
-    saveConversation();
     messagesEl.textContent = "";
     showLanding();
     msgInput.value = "";
     autoResize();
     msgInput.focus();
+    showToast("Conversation cleared");
   }
 
-  // ===== Response Generation =====
+  // ===== Local Basic Brain (In-Memory Rules-Based Responder) =====
 
   /**
-   * Generate a response. Tries API mode first if enabled,
-   * falls back to Local Basic Brain on failure.
-   */
-  async function generateResponse(userText) {
-    if (settings.useApi) {
-      try {
-        return await callApi(userText);
-      } catch (err) {
-        showToast(
-          "API request failed. Falling back to local mode.",
-          true
-        );
-        // Fall through to local brain
-      }
-    }
-    // Simulate slight delay for natural feel
-    await delay(400 + Math.random() * 600);
-    return localBrain(userText);
-  }
-
-  // ===== API Mode =====
-
-  /**
-   * Send conversation to the configured API endpoint.
-   * Request:  { messages: [{ role, content }, ...] }
-   * Response: { reply: "..." }
-   */
-  async function callApi() {
-    const messages = conversation.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const res = await fetch(settings.apiEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        throw new Error("API returned status " + res.status);
-      }
-
-      const data = await res.json();
-
-      if (!data.reply || typeof data.reply !== "string") {
-        throw new Error("Invalid API response format");
-      }
-
-      return data.reply;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      throw err;
-    }
-  }
-
-  // ===== Local Basic Brain =====
-
-  /**
-   * A small rules-based responder that handles common patterns.
-   * No external dependencies needed.
+   * A simple rules-based responder that generates replies entirely
+   * from in-memory logic. No network calls, no storage, no system access.
    */
   function localBrain(input) {
     const text = input.trim();
@@ -451,43 +252,6 @@
       return greetings[Math.floor(Math.random() * greetings.length)];
     }
 
-    // --- Time ---
-    if (
-      lower.includes("what time") ||
-      lower.includes("current time") ||
-      lower.includes("time is it")
-    ) {
-      const now = new Date();
-      return (
-        "The current local time is " +
-        now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }) +
-        "."
-      );
-    }
-
-    // --- Date ---
-    if (
-      lower.includes("what date") ||
-      lower.includes("today's date") ||
-      lower.includes("what day")
-    ) {
-      const now = new Date();
-      return (
-        "Today is " +
-        now.toLocaleDateString([], {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }) +
-        "."
-      );
-    }
-
     // --- What can you do / Help ---
     if (
       lower.includes("what can you do") ||
@@ -495,15 +259,14 @@
       lower.includes("your capabilities")
     ) {
       return [
-        "In Local Basic Brain mode, I can:",
+        "I'm a privacy-safe demo running entirely in your browser. I can:",
         "",
         "- Respond to greetings",
-        "- Tell you the current time and date",
         "- Evaluate simple math expressions (e.g., 2+2, 12*7, (5+3)/2)",
         "- Answer a few common questions",
         "- Provide helpful suggestions",
         "",
-        'To unlock full conversational AI, enable "Use API" in Settings and connect a backend LLM.',
+        "No data is stored or sent anywhere. Conversations are cleared on refresh.",
       ].join("\n");
     }
 
@@ -512,12 +275,12 @@
         "Here are some things you can try:",
         "",
         '- Say "hello" for a greeting',
-        '- Ask "what time is it?" for the current time',
         '- Type a math expression like "2+2" or "(10+5)*3"',
         '- Ask "what can you do?" to see my capabilities',
         '- Ask "what is a wicked problem?"',
+        '- Ask "write a polite email to a professor"',
         "",
-        "Tip: Open Settings to connect an API backend for full AI conversations.",
+        "This is a privacy-safe demo. Nothing is stored or transmitted.",
       ].join("\n");
     }
 
@@ -554,7 +317,7 @@
 
     // --- FAQ: Summarize ---
     if (lower.startsWith("summarize")) {
-      return 'I\'d love to help summarize text for you! In Local Basic Brain mode, I can\'t process long texts intelligently. To get real summaries, enable "Use API" in Settings and connect a backend LLM.\n\nFor now, try pasting a shorter text and I\'ll do my best!';
+      return "I'd love to help summarize text! However, as a rules-based demo, I can't process long texts intelligently. I can answer common questions, do basic math, and demonstrate the chat interface.\n\nTry typing \"help\" to see what I can do!";
     }
 
     // --- Math expressions ---
@@ -564,7 +327,7 @@
     }
 
     // --- Fallback ---
-    return "I'm running in basic mode with limited built-in responses. Connect an LLM backend via Settings to answer anything!\n\nTry asking:\n- \"hello\"\n- \"what time is it?\"\n- A math expression like \"2+2\"\n- \"help\" for more examples";
+    return "I'm a privacy-safe demo with built-in responses only. No data is stored or sent anywhere.\n\nTry asking:\n- \"hello\"\n- A math expression like \"2+2\"\n- \"what is a wicked problem?\"\n- \"help\" for more examples";
   }
 
   // ===== Safe Math Evaluation =====
@@ -575,7 +338,7 @@
    * Only allows: digits, spaces, parentheses, decimal points,
    * and operators +, -, *, /
    *
-   * Uses a simple recursive descent parser instead of eval().
+   * Uses a recursive descent parser (no eval, no Function constructor).
    * Returns the numeric result or null if the input is not a valid expression.
    */
   function tryMath(input) {
@@ -588,7 +351,7 @@
     // Strict whitelist: only allow safe characters
     if (!/^[\d\s()+\-*/.]+$/.test(expr)) return null;
 
-    // Reject empty parens or other oddities
+    // Reject empty parens
     if (/\(\s*\)/.test(expr)) return null;
 
     try {
@@ -618,7 +381,6 @@
     function parseNumber() {
       skipWhitespace();
       let start = pos;
-      // Handle leading negative only inside factor
       if (str[pos] === "-") pos++;
       if (pos >= str.length || (str[pos] < "0" || str[pos] > "9") && str[pos] !== ".") {
         pos = start;
@@ -636,23 +398,20 @@
 
     function parseFactor() {
       skipWhitespace();
-      // Unary minus
       if (str[pos] === "-") {
         pos++;
         const val = parseFactor();
         if (val === null) return null;
         return -val;
       }
-      // Parenthesized expression
       if (str[pos] === "(") {
-        pos++; // skip '('
+        pos++;
         const val = parseExpression();
         skipWhitespace();
         if (str[pos] !== ")") return null;
-        pos++; // skip ')'
+        pos++;
         return val;
       }
-      // Number
       return parseNumber();
     }
 
@@ -667,7 +426,7 @@
         if (right === null) return null;
         if (op === "*") left *= right;
         else {
-          if (right === 0) return null; // Division by zero
+          if (right === 0) return null;
           left /= right;
         }
         skipWhitespace();
@@ -693,15 +452,8 @@
 
     const result = parseExpression();
     skipWhitespace();
-    // Ensure we consumed the entire string
     if (pos !== str.length) return null;
     return result;
-  }
-
-  // ===== Utilities =====
-
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // ===== Boot =====

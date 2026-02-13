@@ -18,12 +18,8 @@
         </svg>
       </button>
       <h1 class="top-bar-title">My Personal LLM</h1>
-      <button id="settingsBtnTop" class="icon-btn" aria-label="Settings" title="Settings">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
+      <!-- Placeholder for layout symmetry -->
+      <div style="width:36px"></div>
     </header>
 
     <!-- Landing screen -->
@@ -37,7 +33,7 @@
             </svg>
           </div>
           <h1 class="brand-title">My Personal LLM</h1>
-          <p class="brand-tagline">Ask anything. Private. Local.</p>
+          <p class="brand-tagline">Ask anything. Private. In-memory only.</p>
         </div>
 
         <div class="chips" role="list" aria-label="Suggested prompts">
@@ -84,53 +80,9 @@
         </button>
       </div>
       <div class="composer-footer">
-        <button id="settingsBtnLanding" class="settings-toggle" aria-label="Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-          <span>Settings</span>
-        </button>
-        <span class="mode-label" id="modeLabel">Local Basic Brain</span>
+        <span class="mode-label">In-memory demo &middot; No data stored</span>
       </div>
     </footer>
-
-    <!-- Settings panel (overlay) -->
-    <div id="settingsOverlay" class="settings-overlay hidden" role="dialog" aria-label="Settings" aria-modal="true">
-      <div class="settings-panel">
-        <div class="settings-header">
-          <h2>Settings</h2>
-          <button id="closeSettings" class="icon-btn" aria-label="Close settings">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-        <div class="settings-body">
-          <div class="setting-row">
-            <div class="setting-info">
-              <label for="apiToggle" class="setting-label">Use API</label>
-              <p class="setting-desc">Send messages to a backend LLM endpoint instead of the local basic brain.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="apiToggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div id="apiSettings" class="api-settings hidden">
-            <label for="apiEndpoint" class="setting-label">API Endpoint</label>
-            <input
-              type="url"
-              id="apiEndpoint"
-              class="text-input"
-              value="http://localhost:8080/chat"
-              placeholder="http://localhost:8080/chat"
-            >
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Toast container -->
     <div id="toastContainer" class="toast-container" aria-live="assertive"></div>
