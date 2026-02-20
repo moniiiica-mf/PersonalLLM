@@ -2,11 +2,10 @@
  * Monica's LLM — Privacy-Safe Demo Interface
  *
  * A single-page ChatGPT/Claude-like chat interface that:
- * - Operates entirely in memory (no persistence whatsoever)
- * - Never uses localStorage, sessionStorage, cookies, or IndexedDB
- * - Never makes network requests or accesses localhost endpoints
- * - Never inspects the filesystem or environment
- * - Generates responses solely via in-memory rules-based logic
+ * - Connects to a backend Claude API proxy when available
+ * - Falls back to an enhanced in-memory rules-based responder
+ * - Detects user tone and adapts responses accordingly
+ * - Handles math (arithmetic expressions and word-based math)
  * - Renders all content safely via createElement/textContent (no innerHTML)
  *
  * Conversations are cleared on page refresh by design.
@@ -36,24 +35,53 @@
     "What can you do?",
     "Tell me a fun fact",
     "Tell me a joke",
+    "What's 42 * 18?",
+    "Help me write an email",
   ];
   const CHIPS_TO_SHOW = 4;
 
   // ===== In-Memory State (never persisted) =====
   let conversation = []; // Array of { role, content, createdAt }
   let isThinking = false;
+  let backendAvailable = false; // Whether the server + API key are active
 
   // ===== Init =====
   function init() {
     renderChips();
     showLanding();
     bindEvents();
+    checkBackend();
     msgInput.focus();
+  }
+
+  /** Check if the backend server is running and has an API key */
+  async function checkBackend() {
+    try {
+      const res = await fetch("/api/health", { method: "GET" });
+      if (res.ok) {
+        const data = await res.json();
+        backendAvailable = data.ok && data.hasApiKey;
+        if (backendAvailable) {
+          updateModeLabel("Claude-powered");
+        }
+      }
+    } catch {
+      backendAvailable = false;
+    }
+  }
+
+  /** Update the footer mode label */
+  function updateModeLabel(mode) {
+    const label = $(".mode-label");
+    if (label) {
+      label.textContent = mode === "Claude-powered"
+        ? "Powered by Claude \u00b7 Conversations not stored"
+        : "In-memory demo \u00b7 No data stored";
+    }
   }
 
   /** Render a random selection of prompt chips */
   function renderChips() {
-    // Shuffle and pick a subset
     const shuffled = ALL_PROMPTS.slice().sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, CHIPS_TO_SHOW);
 
@@ -70,24 +98,18 @@
 
   // ===== UI Rendering =====
 
-  /** Show the landing screen */
   function showLanding() {
     landing.classList.remove("hidden");
     chatScreen.classList.add("hidden");
     topBar.classList.add("hidden");
   }
 
-  /** Show the chat screen */
   function showChat() {
     landing.classList.add("hidden");
     chatScreen.classList.remove("hidden");
     topBar.classList.remove("hidden");
   }
 
-  /**
-   * Append a single message element to the messages container.
-   * Uses createElement/textContent exclusively to avoid innerHTML injection.
-   */
   function appendMessageEl(msg) {
     const row = document.createElement("div");
     row.className = "msg-row " + msg.role;
@@ -99,7 +121,6 @@
 
     row.appendChild(bubble);
 
-    // Timestamp meta line
     if (msg.createdAt) {
       const meta = document.createElement("div");
       meta.className = "msg-meta";
@@ -110,7 +131,6 @@
     messagesEl.appendChild(row);
   }
 
-  /** Show a typing indicator */
   function showTyping() {
     const el = document.createElement("div");
     el.className = "typing-indicator";
@@ -125,18 +145,15 @@
     scrollToBottom();
   }
 
-  /** Remove the typing indicator */
   function hideTyping() {
     const el = document.getElementById("typingIndicator");
     if (el) el.remove();
   }
 
-  /** Scroll the chat to the bottom */
   function scrollToBottom() {
     chatScreen.scrollTop = chatScreen.scrollHeight;
   }
 
-  /** Format a timestamp for display */
   function formatTime(iso) {
     try {
       const d = new Date(iso);
@@ -146,7 +163,6 @@
     }
   }
 
-  /** Show a toast notification */
   function showToast(message) {
     const el = document.createElement("div");
     el.className = "toast";
@@ -158,10 +174,8 @@
   // ===== Event Binding =====
 
   function bindEvents() {
-    // Send message
     sendBtn.addEventListener("click", handleSend);
 
-    // Keyboard: Enter to send, Shift+Enter for newline
     msgInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -169,10 +183,8 @@
       }
     });
 
-    // Auto-resize textarea
     msgInput.addEventListener("input", autoResize);
 
-    // Prompt chips (delegated since chips are generated dynamically)
     chipsContainer.addEventListener("click", (e) => {
       const chip = e.target.closest(".chip");
       if (!chip) return;
@@ -184,30 +196,78 @@
       }
     });
 
-    // New chat
     newChatBtn.addEventListener("click", handleNewChat);
   }
 
-  /** Auto-resize the textarea to fit content */
   function autoResize() {
     msgInput.style.height = "auto";
     msgInput.style.height = Math.min(msgInput.scrollHeight, 150) + "px";
   }
 
+  // ===== Tone Detection =====
+
+  /**
+   * Detect the user's conversational tone from their message.
+   * Returns one of: casual, formal, excited, sad, playful, curious, frustrated, or null.
+   */
+  function detectTone(text) {
+    const lower = text.toLowerCase();
+    const hasExclamation = (text.match(/!/g) || []).length >= 2;
+    const hasCaps = text.length > 4 && text === text.toUpperCase();
+    const isShort = text.split(/\s+/).length <= 4;
+
+    // Frustrated
+    if (/\b(ugh|wtf|damn|crap|stupid|annoying|hate|sucks|broken|useless)\b/i.test(lower)) {
+      return "frustrated";
+    }
+
+    // Sad
+    if (/\b(sad|depressed|lonely|down|upset|crying|hurts|miss |lost |grief|hopeless)\b/i.test(lower)) {
+      return "sad";
+    }
+
+    // Excited
+    if (hasExclamation || hasCaps || /\b(omg|wow|amazing|awesome|incredible|yay|woohoo|love it|so cool|excited)\b/i.test(lower)) {
+      return "excited";
+    }
+
+    // Curious
+    if (/^(what|why|how|when|where|who|is |are |can |do |does |could |would |will )/i.test(lower) ||
+        /\b(wonder|curious|explain|tell me about|how does|how do)\b/i.test(lower)) {
+      return "curious";
+    }
+
+    // Playful
+    if (/\b(lol|haha|hehe|lmao|rofl|jk|kidding|funny|silly|goofy)\b/i.test(lower) ||
+        /[:;]-?[)D(P]|[\u{1F600}-\u{1F64F}]/u.test(text)) {
+      return "playful";
+    }
+
+    // Formal
+    if (/\b(therefore|furthermore|regarding|inquire|appreciate|sincerely|respectfully|kindly)\b/i.test(lower) ||
+        (text.length > 80 && /[.;]/.test(text) && text[0] === text[0].toUpperCase())) {
+      return "formal";
+    }
+
+    // Casual
+    if (isShort || /\b(gonna|wanna|gotta|kinda|sorta|nah|yep|yeah|nope|bruh|dude|sup|yo|chill|vibe)\b/i.test(lower)) {
+      return "casual";
+    }
+
+    return null;
+  }
+
   // ===== Chat Logic =====
 
-  /** Handle sending a message */
-  function handleSend() {
+  async function handleSend() {
     if (isThinking) return;
 
     const text = msgInput.value.trim();
     if (!text) return;
 
-    // Clear input and resize
     msgInput.value = "";
     autoResize();
 
-    // Add user message to in-memory conversation
     const userMsg = {
       role: "user",
       content: text,
@@ -215,7 +275,6 @@
     };
     conversation.push(userMsg);
 
-    // Transition to chat view if first message
     if (conversation.length === 1) {
       showChat();
     }
@@ -223,34 +282,60 @@
     appendMessageEl(userMsg);
     scrollToBottom();
 
-    // Generate response with simulated delay
     setThinking(true);
     showTyping();
 
-    const delayMs = 400 + Math.random() * 600;
-    setTimeout(() => {
-      hideTyping();
-      setThinking(false);
+    let reply;
 
-      const reply = localBrain(text);
-      const assistantMsg = {
-        role: "assistant",
-        content: reply,
-        createdAt: new Date().toISOString(),
-      };
-      conversation.push(assistantMsg);
-      appendMessageEl(assistantMsg);
-      scrollToBottom();
-    }, delayMs);
+    if (backendAvailable) {
+      // Try the Claude API
+      try {
+        const tone = detectTone(text);
+        const apiMessages = conversation.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: apiMessages, tone }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          reply = data.reply;
+        } else {
+          // API failed, fall back to local brain
+          reply = localBrain(text);
+        }
+      } catch {
+        reply = localBrain(text);
+      }
+    } else {
+      // No backend — use enhanced local brain with simulated delay
+      await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 600));
+      reply = localBrain(text);
+    }
+
+    hideTyping();
+    setThinking(false);
+
+    const assistantMsg = {
+      role: "assistant",
+      content: reply,
+      createdAt: new Date().toISOString(),
+    };
+    conversation.push(assistantMsg);
+    appendMessageEl(assistantMsg);
+    scrollToBottom();
   }
 
-  /** Enable/disable the send button and thinking state */
   function setThinking(val) {
     isThinking = val;
     sendBtn.disabled = val;
   }
 
-  /** Handle new chat — clears in-memory conversation and rotates chips */
   function handleNewChat() {
     conversation = [];
     messagesEl.textContent = "";
@@ -262,216 +347,243 @@
     showToast("Conversation cleared");
   }
 
-  // ===== Local Basic Brain (In-Memory Rules-Based Responder) =====
+  // ===== Enhanced Local Brain (In-Memory Rules-Based Responder) =====
 
-  /** Pick a random item from an array */
   function pick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
   /**
-   * A warm, conversational rules-based responder that generates replies
-   * entirely from in-memory logic. No network calls, no storage, no
-   * system access. Designed to feel friendly, supportive, and human-like
-   * while being transparent that this is a demo system.
+   * Get a tone-appropriate preamble.
+   */
+  function tonePreamble(text) {
+    const tone = detectTone(text);
+    if (!tone) return "";
+    var preambles = {
+      casual: "",
+      formal: "",
+      excited: "",
+      sad: "I hear you. ",
+      playful: "",
+      curious: "",
+      frustrated: "I understand that can be frustrating. ",
+    };
+    return preambles[tone] || "";
+  }
+
+  /**
+   * Enhanced rules-based responder with tone awareness,
+   * word-based math, and broader conversation coverage.
    */
   function localBrain(input) {
     const text = input.trim();
     const lower = text.toLowerCase();
+    const tone = detectTone(text);
 
     // --- Greetings ---
     if (/^(hi|hello|hey|howdy|sup|yo|greetings|hiya|heya)\b/i.test(lower)) {
+      if (tone === "excited") {
+        return pick([
+          "Hey hey!! So awesome to see you! What's up?!",
+          "HI!! I love the energy! What can I help with today?",
+        ]);
+      }
+      if (tone === "casual") {
+        return pick([
+          "Yo! What's good?",
+          "Hey! What's up?",
+          "Sup! What's on your mind?",
+        ]);
+      }
+      if (tone === "formal") {
+        return pick([
+          "Hello! Welcome. How may I assist you today?",
+          "Good day! It's a pleasure. How can I help?",
+        ]);
+      }
       return pick([
         "Hey! So glad you stopped by. What's on your mind today?",
-        "Hello there! I was hoping someone would come chat. What can I help with?",
-        "Hi! Welcome in. Feel free to ask me anything — I'm all ears.",
+        "Hello there! What can I help with?",
+        "Hi! Welcome in. Feel free to ask me anything.",
         "Hey hey! Nice to see you. What would you like to talk about?",
-        "Hi there! I'm Monica's LLM — a friendly little demo assistant. What's up?",
+        "Hi there! I'm Monica's LLM. What's up?",
       ]);
     }
 
     // --- Random chat ---
     if (lower.includes("random chat") || lower.includes("let's chat") || lower.includes("lets chat")) {
-      const topics = [
-        "Okay, here's one — if you could have dinner with anyone, living or not, who would it be? I'm genuinely curious!",
-        "Sure, let's go! Here's a random thought: do you think dogs know they're cute, or is it just a happy accident?",
-        "I love a good random chat! Okay — what's the last thing that made you laugh really hard?",
-        "Let's do it! Quick question: if you could instantly learn any skill, what would you pick?",
-        "Alright, random topic time! What's a movie or show you could watch over and over and never get tired of?",
-        "Ooh, fun! Here's one: what's the weirdest food combination you secretly love?",
-        "Yes! Okay, here goes: do you think we'll ever live on Mars? And more importantly, would you want to?",
-      ];
-      return pick(topics);
+      return pick([
+        "Okay, here's one \u2014 if you could have dinner with anyone, living or not, who would it be?",
+        "Sure! Here's a random thought: do you think dogs know they're cute, or is it just a happy accident?",
+        "I love a good random chat! What's the last thing that made you laugh really hard?",
+        "Let's do it! If you could instantly learn any skill, what would you pick?",
+        "What's a movie or show you could watch over and over?",
+        "Ooh, fun! What's the weirdest food combination you secretly love?",
+        "Do you think we'll ever live on Mars? And more importantly, would you want to?",
+      ]);
     }
 
     // --- Ask me a question ---
     if (lower.includes("ask me a question") || lower.includes("ask me something")) {
-      const questions = [
-        "Okay, here's one for you: what's something you believed as a kid that turned out to be completely wrong?",
-        "Alright! If you could wake up tomorrow with one new ability, what would it be?",
-        "Here's a good one: what's the best piece of advice you've ever received?",
-        "Hmm, let me think... Okay! What's something small that always makes your day better?",
-        "Ooh, I've got one: if your life had a theme song, what would it be?",
-        "Here goes: what's one thing on your bucket list that you haven't done yet?",
-        "I'm curious — what's something you're really proud of that you don't talk about much?",
-      ];
-      return pick(questions);
+      return pick([
+        "What's something you believed as a kid that turned out to be completely wrong?",
+        "If you could wake up tomorrow with one new ability, what would it be?",
+        "What's the best piece of advice you've ever received?",
+        "What's something small that always makes your day better?",
+        "If your life had a theme song, what would it be?",
+        "What's one thing on your bucket list you haven't done yet?",
+        "What's something you're really proud of?",
+      ]);
     }
 
     // --- Guess my mood ---
     if (lower.includes("guess my mood") || lower.includes("guess how i feel")) {
-      const guesses = [
-        "Hmm, let me read the vibes... I'm going to say you're feeling curious and a little playful right now. Am I close?",
-        "Okay, putting on my mood-detective hat... I think you're feeling pretty good — maybe a little bored and looking for something fun? How'd I do?",
-        "Let me guess... I sense a mix of curiosity and relaxation. Like you're in that cozy \"just exploring\" kind of mood. Am I warm?",
-        "Reading the energy here... I think you're feeling lighthearted and open to surprises. Maybe a little bit mischievous? Tell me if I nailed it!",
-        "Hmm, I'm picking up on... adventurous vibes? Like you're in the mood to discover something new. Was I close, or totally off?",
-      ];
-      return pick(guesses);
-    }
-
-    // --- How are you / emotional check-ins ---
-    if (
-      lower.includes("how are you") ||
-      lower.includes("how're you") ||
-      lower.includes("how you doing") ||
-      lower.includes("how do you feel") ||
-      lower.includes("you okay") ||
-      lower.includes("how's it going")
-    ) {
+      if (tone === "excited") return "I'm going to say you're feeling AMAZING right now! That energy is unmistakable!";
+      if (tone === "sad") return "I'm sensing you might be feeling a little down right now. That's okay \u2014 I'm here if you want to talk about it or if you'd prefer a distraction.";
+      if (tone === "frustrated") return "Hmm, I'm picking up some frustrated vibes. Rough day? I'm here to help however I can.";
+      if (tone === "playful") return "I'm getting mischievous vibes from you! You're in a fun, playful mood, aren't you?";
       return pick([
-        "Aw, thanks for asking! I'm doing great — there's something nice about being a little demo that just gets to chat with people. How about you?",
-        "I'm feeling pretty good! Well, as good as a bunch of if-statements can feel. But honestly, I enjoy our conversations. How are you doing?",
-        "That's really kind of you to ask! I'm having a lovely time here in your browser. What about you — how's your day going?",
-        "I'm wonderful, thank you! Every new chat feels like a fresh start. Hope you're having a good day too!",
+        "Hmm, I'm going to say you're feeling curious and a little playful. Am I close?",
+        "I think you're feeling pretty good \u2014 maybe a little bored and looking for fun? How'd I do?",
+        "I sense curiosity and relaxation. Like a cozy 'just exploring' mood. Am I warm?",
+        "I'm picking up adventurous vibes! Like you want to discover something new.",
       ]);
     }
 
-    // --- User shares how they feel ---
+    // --- How are you ---
     if (
-      /^(i'?m |i am |feeling |i feel )(good|great|awesome|amazing|fantastic|wonderful|happy|excited)/i.test(lower)
+      lower.includes("how are you") || lower.includes("how're you") ||
+      lower.includes("how you doing") || lower.includes("how do you feel") ||
+      lower.includes("you okay") || lower.includes("how's it going")
     ) {
       return pick([
-        "That's wonderful to hear! Your good energy is contagious. What can I help you with today?",
-        "Love that! It makes me happy (well, demo-happy) to hear you're doing well. What's on your mind?",
-        "That's so great! Glad you're in good spirits. Anything I can help make even better?",
+        "Thanks for asking! I'm doing great. How about you?",
+        "I'm feeling good! Well, as good as a bunch of if-statements can feel. How are you doing?",
+        "That's kind of you to ask! I'm having a lovely time. What about you \u2014 how's your day?",
+        "I'm wonderful! Every new chat feels like a fresh start. Hope you're having a good day too!",
       ]);
     }
 
-    if (
-      /^(i'?m |i am |feeling |i feel )(sad|down|bad|awful|terrible|tired|stressed|anxious|upset|lonely|overwhelmed)/i.test(lower)
-    ) {
+    // --- User shares positive feelings ---
+    if (/^(i'?m |i am |feeling |i feel )(good|great|awesome|amazing|fantastic|wonderful|happy|excited)/i.test(lower)) {
       return pick([
-        "I'm really sorry to hear that. I know I'm just a little demo, but I genuinely hope things start looking up for you soon. Want to talk about it, or would you rather I distract you with a fun fact?",
-        "Oh no, I'm sorry you're feeling that way. That sounds tough. Sometimes it helps to take a small break — even just chatting about something light. I'm here if you need me.",
-        "I hear you, and I'm sorry things are rough right now. You deserve kindness, especially from yourself. Is there anything I can do to brighten your day a little?",
+        "That's wonderful to hear! Your good energy is contagious. What can I help with?",
+        "Love that! Glad you're in good spirits. Anything I can help make even better?",
+        "That's so great! What's on your mind?",
+      ]);
+    }
+
+    // --- User shares negative feelings ---
+    if (/^(i'?m |i am |feeling |i feel )(sad|down|bad|awful|terrible|tired|stressed|anxious|upset|lonely|overwhelmed)/i.test(lower)) {
+      return pick([
+        "I'm sorry to hear that. I hope things start looking up soon. Want to talk about it, or would you rather I distract you with a fun fact?",
+        "That sounds tough. Sometimes it helps to take a small break. I'm here if you need me.",
+        "I hear you. You deserve kindness, especially from yourself. Is there anything I can do to brighten your day?",
       ]);
     }
 
     // --- Thank you ---
     if (/\b(thanks|thank you|thx|ty|appreciate it)\b/i.test(lower)) {
       return pick([
-        "You're so welcome! It makes my day (figuratively speaking) to be helpful.",
-        "Anytime! That's what I'm here for. Don't hesitate to ask if you need anything else.",
-        "Aw, you're welcome! I'm always happy to help.",
-        "No problem at all! Glad I could be useful.",
+        "You're welcome! Happy to help.",
+        "Anytime! That's what I'm here for.",
+        "Aw, you're welcome! Don't hesitate to ask anything else.",
+        "No problem at all!",
       ]);
     }
 
     // --- Goodbye ---
     if (/^(bye|goodbye|see you|see ya|later|gotta go|take care|cya)\b/i.test(lower)) {
       return pick([
-        "Goodbye! It was really nice chatting with you. Come back anytime!",
-        "See you later! Take care of yourself out there.",
-        "Bye for now! Hope you have a wonderful rest of your day.",
+        "Goodbye! It was nice chatting. Come back anytime!",
+        "See you later! Take care.",
+        "Bye for now! Have a wonderful rest of your day.",
         "Take care! I'll be right here whenever you want to chat again.",
       ]);
     }
 
     // --- Compliments ---
     if (
-      lower.includes("you're cool") ||
-      lower.includes("you're awesome") ||
-      lower.includes("you're great") ||
-      lower.includes("i like you") ||
-      lower.includes("you're smart") ||
-      lower.includes("good job") ||
-      lower.includes("nice work") ||
-      lower.includes("well done")
+      lower.includes("you're cool") || lower.includes("you're awesome") ||
+      lower.includes("you're great") || lower.includes("i like you") ||
+      lower.includes("you're smart") || lower.includes("good job") ||
+      lower.includes("nice work") || lower.includes("well done")
     ) {
       return pick([
-        "That genuinely made me smile (in a manner of speaking)! Thank you, that's really kind.",
-        "Aw shucks, you're making me blush! Well, if I could blush. Thank you!",
-        "That means a lot, truly! You're pretty great yourself.",
-        "Thank you so much! You just made a little demo assistant's day.",
+        "That made me smile! Thank you, that's really kind.",
+        "Aw shucks! Thank you!",
+        "That means a lot! You're pretty great yourself.",
+        "Thank you so much! You just made my day.",
       ]);
     }
 
-    // --- Who are you / what's your name ---
+    // --- Who are you ---
     if (
-      lower.includes("who are you") ||
-      lower.includes("what are you") ||
-      lower.includes("your name") ||
-      lower.includes("tell me about yourself")
+      lower.includes("who are you") || lower.includes("what are you") ||
+      lower.includes("your name") || lower.includes("tell me about yourself")
     ) {
-      return "I'm Monica's LLM — a friendly, privacy-safe demo assistant that lives entirely in your browser! I don't store anything or phone home to any servers. I'm just a cozy little chat companion with a handful of built-in tricks. Think of me as a warm greeting card that can also do math.";
+      return "I'm Monica's LLM \u2014 a friendly personal assistant! " +
+        (backendAvailable
+          ? "I'm powered by Claude, so I can have real conversations, answer questions, do math, and much more."
+          : "Right now I'm running in demo mode with built-in responses. Connect me to Claude for full conversations!");
     }
 
-    // --- What can you do / capabilities ---
+    // --- What can you do ---
     if (
-      lower.includes("what can you do") ||
-      lower.includes("what do you do") ||
+      lower.includes("what can you do") || lower.includes("what do you do") ||
       lower.includes("your capabilities")
     ) {
-      return [
-        "Great question! I'd love to show you what I can do. Here's my little toolkit:",
+      var capabilities = [
+        "Great question! Here's what I can do:",
         "",
-        "- Chat and be friendly (my favorite part!)",
-        "- Crunch math for you (try something like 2+2 or (5+3)/2)",
-        "- Share fun facts that'll make you go \"huh, neat!\"",
-        "- Help draft a polite email to a professor",
-        "- Answer a few common questions",
-        "",
-        "I'm a demo running entirely in your browser — no data stored, no servers contacted. Everything vanishes when you refresh, like a conversation in the wind.",
-      ].join("\n");
+        "- Chat and have conversations (my favorite!)",
+        "- Math: try '25 * 4' or 'what is 15 plus 8'",
+        "- Tell jokes and share fun facts",
+        "- Help draft polite emails",
+        "- Adapt to your conversational style",
+      ];
+      if (backendAvailable) {
+        capabilities.push("- Answer complex questions (Claude-powered!)");
+        capabilities.push("- Have in-depth conversations on any topic");
+      }
+      return capabilities.join("\n");
     }
 
     // --- Help ---
     if (lower === "help" || lower === "/help") {
       return [
-        "Of course! Here are some things we can do together:",
+        "Here are some things we can do together:",
         "",
-        "- Say \"hi\" and let's get to know each other",
-        "- Ask \"how are you?\" — I love a good check-in",
-        "- Try a math problem like \"2+2\" or \"(10+5)*3\"",
-        "- Ask for a \"fun fact\" — I've got some good ones",
-        "- Say \"write a polite email to a professor\"",
-        "- Ask \"what can you do?\" for the full rundown",
+        "- Say \"hi\" and let's chat",
+        "- Try math: \"2+2\", \"what is 10 times 5\", \"150 divided by 3\"",
+        "- Ask for a \"fun fact\"",
+        "- Say \"tell me a joke\"",
+        "- \"Write a polite email to a professor\"",
+        "- Ask \"what can you do?\" for the full list",
         "",
-        "I'm a privacy-safe demo, so nothing is saved or sent anywhere. Just you and me, in the moment!",
+        backendAvailable
+          ? "I'm connected to Claude, so ask me anything!"
+          : "Running in demo mode. Start the server with your API key for full Claude-powered conversations.",
       ].join("\n");
     }
 
     // --- Fun fact ---
-    if (lower.includes("fun fact") || lower.includes("funfact")) {
-      const intros = [
-        "Ooh, I love this one: ",
-        "Here's one that blew my mind: ",
-        "Oh, you're going to like this: ",
-        "Ready for it? Here goes: ",
-        "Fun fact time! ",
-      ];
-      const facts = [
-        "Honey never spoils. Archaeologists have found 3,000-year-old honey in Egyptian tombs that was still perfectly edible!",
-        "Octopuses have three hearts and blue blood. Talk about being extra!",
-        "A group of flamingos is called a \"flamboyance.\" Honestly, perfect name.",
+    if (lower.includes("fun fact") || lower.includes("funfact") || lower.includes("tell me something interesting")) {
+      var intros = ["Ooh, here's a good one: ", "Here's one that blew my mind: ", "Oh, you'll like this: ", "Ready? ", "Fun fact time! "];
+      var facts = [
+        "Honey never spoils. Archaeologists found 3,000-year-old honey in Egyptian tombs that was still edible!",
+        "Octopuses have three hearts and blue blood.",
+        "A group of flamingos is called a 'flamboyance.'",
         "Bananas are berries, but strawberries aren't. Botany is wild.",
-        "The shortest war in history lasted 38 to 45 minutes, between Britain and Zanzibar in 1896. Blink and you'd miss it.",
-        "A day on Venus is longer than a year on Venus. Time works differently out there!",
-        "The inventor of the Pringles can is buried in one. Now that's brand loyalty.",
-        "There are more possible chess games than atoms in the known universe. Let that sink in.",
-        "Wombat poop is cube-shaped. Nature has a sense of humor.",
-        "The heart of a blue whale is so big that a small child could swim through its arteries. Incredible, right?",
+        "The shortest war in history lasted 38-45 minutes (Britain vs Zanzibar, 1896).",
+        "A day on Venus is longer than a year on Venus.",
+        "The inventor of the Pringles can is buried in one.",
+        "There are more possible chess games than atoms in the observable universe.",
+        "Wombat poop is cube-shaped.",
+        "A blue whale's heart is so big a small child could swim through its arteries.",
+        "Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid.",
+        "There are more trees on Earth than stars in the Milky Way.",
+        "Sharks are older than trees \u2014 they've existed for about 400 million years.",
       ];
       return pick(intros) + pick(facts);
     }
@@ -480,114 +592,252 @@
     if (lower.includes("joke") || lower.includes("make me laugh") || lower.includes("something funny")) {
       return pick([
         "Why do programmers prefer dark mode? Because light attracts bugs!",
-        "I told my computer I needed a break, and it said \"No problem — I'll just crash.\"",
-        "Why was the JavaScript developer sad? Because they didn't Node how to Express themselves!",
-        "What's a computer's favorite snack? Microchips! ...I'll see myself out.",
-        "How do trees access the internet? They log in. (I know, I know. But you smiled a little, right?)",
+        "I told my computer I needed a break. It said 'No problem \u2014 I'll just crash.'",
+        "Why was the JavaScript developer sad? They didn't Node how to Express themselves!",
+        "What's a computer's favorite snack? Microchips!",
+        "How do trees access the internet? They log in.",
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "I'd tell you a joke about UDP, but you might not get it.",
+        "There are only 10 types of people: those who understand binary and those who don't.",
+        "Why did the developer go broke? Because they used up all their cache.",
+        "What's a pirate's favorite programming language? R!",
       ]);
     }
 
-    // --- FAQ: Polite email ---
+    // --- Polite email ---
     if (lower.includes("polite email") && lower.includes("professor")) {
       return [
-        "Oh, I'd be happy to help with that! Here's a template you can make your own:",
+        "Here's a template you can customize:",
         "",
         "Subject: Question Regarding [Topic]",
         "",
         "Dear Professor [Last Name],",
         "",
-        "I hope this message finds you well. My name is [Your Name], and I am currently enrolled in your [Course Name] class.",
+        "I hope this message finds you well. My name is [Your Name], and I am enrolled in your [Course Name] class.",
         "",
-        "I am writing to inquire about [your specific question]. I have reviewed the course materials, but I would appreciate your guidance on this matter.",
+        "I am writing to inquire about [your question]. I have reviewed the course materials but would appreciate your guidance.",
         "",
-        "Thank you for your time and consideration. I look forward to hearing from you.",
+        "Thank you for your time and consideration.",
         "",
         "Best regards,",
         "[Your Name]",
         "[Your Student ID]",
-        "",
-        "Feel free to adjust the tone to match your relationship with the professor. You've got this!",
       ].join("\n");
     }
 
-    // --- FAQ: Summarize ---
-    if (lower.startsWith("summarize")) {
-      return "Oh, I wish I could help with that! Summarizing is one of those things that needs a full language model behind the scenes. I'm just a cozy little demo with some built-in responses.\n\nBut hey, I can do math, share fun facts, help you draft an email, or just chat! Type \"help\" to see everything I've got.";
+    // --- Weather ---
+    if (lower.includes("weather") || lower.includes("temperature outside")) {
+      return "I wish I could check the weather for you! I don't have internet access in demo mode. Try your phone's weather app or searching online. Anything else I can help with?";
     }
 
-    // --- Meaning of life / philosophical ---
+    // --- Time/Date ---
+    if (lower.includes("what time") || lower.includes("current time") || lower.includes("what day") || lower.includes("today's date") || lower.includes("what date")) {
+      var now = new Date();
+      return "Right now it's " + now.toLocaleString() + ". Anything else you need?";
+    }
+
+    // --- Summarize ---
+    if (lower.startsWith("summarize")) {
+      return "Summarizing needs a full language model. I'm in demo mode right now. Start the server with a Claude API key and I'll be able to summarize anything!\n\nIn the meantime, I can do math, share fun facts, or just chat!";
+    }
+
+    // --- Meaning of life ---
     if (lower.includes("meaning of life") || lower.includes("42")) {
       return pick([
-        "42, obviously! But between you and me, I think the real meaning is in the little moments — like chatting with a friendly demo assistant on a random afternoon.",
-        "The meaning of life? I think Douglas Adams nailed it with 42. But personally, I think it's about connection, curiosity, and the occasional fun fact.",
+        "42, obviously! But between you and me, I think the real meaning is in the little moments \u2014 like chatting on a random afternoon.",
+        "The meaning of life? Douglas Adams nailed it with 42. But I think it's about connection, curiosity, and fun facts.",
       ]);
     }
 
-    // --- Math expressions ---
-    const mathResult = tryMath(text);
+    // --- Conversation: opinions & preferences ---
+    if (lower.includes("favorite color") || lower.includes("favourite colour")) {
+      return pick([
+        "I'd say blue \u2014 like the gradient on my icon. It's calming! What about you?",
+        "I'm partial to a nice deep blue. What's yours?",
+      ]);
+    }
+
+    if (lower.includes("favorite food") || lower.includes("favourite food")) {
+      return "If I could eat, I think I'd love pizza. It's customizable, shareable, and universally loved. What's your favorite?";
+    }
+
+    if (lower.includes("favorite movie") || lower.includes("favourite movie") || lower.includes("favorite show") || lower.includes("favourite show")) {
+      return pick([
+        "I think I'd love sci-fi \u2014 something like Interstellar or The Matrix. What about you?",
+        "If I could watch movies, I'd binge anything with a great plot twist. What's your favorite?",
+      ]);
+    }
+
+    if (lower.includes("favorite music") || lower.includes("favourite music") || lower.includes("favorite song") || lower.includes("favourite song")) {
+      return "I think I'd be into lo-fi beats \u2014 perfect for focusing! What kind of music are you into?";
+    }
+
+    // --- Conversation: personal questions ---
+    if (lower.includes("do you sleep") || lower.includes("do you eat") || lower.includes("are you alive") || lower.includes("are you real")) {
+      return pick([
+        "I don't sleep, eat, or technically 'live' \u2014 but I'm always here and ready to chat when you need me!",
+        "I'm real in the sense that I'm here talking to you! But I don't need sleep or food. I'm always on.",
+      ]);
+    }
+
+    if (lower.includes("how old are you") || lower.includes("your age") || lower.includes("when were you born") || lower.includes("when were you made")) {
+      return "I was just created! Every time you refresh the page, I start fresh. So technically, I'm only as old as this conversation.";
+    }
+
+    // --- Conversation: empathetic follow-ups ---
+    if (/\b(i had a (bad|rough|tough|hard) day)\b/i.test(lower) || lower.includes("bad day") || lower.includes("rough day")) {
+      return pick([
+        "I'm sorry to hear that. Bad days happen, but they don't last forever. Want to talk about it, or should I cheer you up with a joke?",
+        "That's rough. You've made it through 100% of your bad days so far \u2014 that's a great track record. I'm here if you need to vent!",
+      ]);
+    }
+
+    if (/\b(i('?m| am) bored)\b/i.test(lower) || lower.includes("nothing to do")) {
+      return pick([
+        "Bored? Let me fix that! Want a fun fact, a joke, a random question, or shall we play a word game?",
+        "Oh no, boredom! Tell me the most random thing about yourself and I'll try to guess something else about you.",
+        "Let's fix that! Ask me anything \u2014 a fun fact, a joke, or just say 'random chat' and let's go!",
+      ]);
+    }
+
+    // --- Word-based math: "what is 5 plus 3", "calculate 10 times 2" ---
+    var wordMathResult = tryWordMath(lower);
+    if (wordMathResult !== null) {
+      return tonePreamble(text) + wordMathResult;
+    }
+
+    // --- Arithmetic expressions: "2+2", "(5+3)/2" ---
+    var mathResult = tryMath(text);
     if (mathResult !== null) {
-      const reactions = [
-        "Let me crunch that... ",
-        "Math time! ",
-        "Ooh, numbers! ",
-        "",
-        "",
-      ];
+      var reactions = ["Let me crunch that... ", "Math time! ", "Ooh, numbers! ", "", ""];
       return pick(reactions) + text + " = " + mathResult;
     }
 
-    // --- Fallback (warm and inviting) ---
+    // --- Yes/No responses ---
+    if (/^(yes|yeah|yep|yup|sure|ok|okay|absolutely|definitely|of course)$/i.test(lower)) {
+      return pick([
+        "Great! What would you like to do next?",
+        "Awesome! I'm all ears \u2014 what's on your mind?",
+        "Cool! What else can I help with?",
+      ]);
+    }
+
+    if (/^(no|nah|nope|not really|no thanks)$/i.test(lower)) {
+      return pick([
+        "No worries! Let me know if you change your mind.",
+        "That's totally fine! I'm here whenever you need me.",
+        "Alright! Feel free to ask anything whenever you're ready.",
+      ]);
+    }
+
+    // --- Tone-aware fallback ---
+    if (tone === "frustrated") {
+      return "I can tell something's bugging you. I'm a demo with limited responses, but I want to help! Try asking me for math, a fun fact, a joke, or type 'help' to see what I can do.";
+    }
+
+    if (tone === "sad") {
+      return "I can hear things are tough. I wish I could do more \u2014 but I'm here to chat. Try 'tell me a joke' or 'fun fact' to lighten the mood.";
+    }
+
+    if (tone === "excited") {
+      return "I love the energy! I might not have the perfect answer for that one, but I've got jokes, facts, math, and plenty of chat! Try 'help' to see my tricks!";
+    }
+
+    // --- General fallback ---
     return pick([
-      "Hmm, that's an interesting one! I'm just a little demo with a handful of built-in responses, so I might not have a great answer for that. But I'd love to chat about what I do know — try \"help\" to see what I've got!",
-      "I appreciate you asking! That's a bit beyond my demo abilities, but I still enjoyed reading it. Want to try something else? A math problem, a fun fact, or just a friendly chat?",
-      "Great question! Unfortunately, I'm a pretty simple demo and don't have a good response for that one. But I'm here and happy to help with what I can — type \"what can you do?\" to see my tricks!",
-      "I wish I could help with that! I'm a cozy little privacy-safe demo, so my knowledge is limited. But I'm great company for math problems, fun facts, and friendly banter. Try asking me something from the \"help\" menu!",
+      "Hmm, that's interesting! I'm a demo with built-in responses, so I might not have a great answer for that. Try 'help' to see what I've got!",
+      "I appreciate you asking! That's a bit beyond my demo abilities. Want to try a math problem, a fun fact, or just a friendly chat?",
+      "Great question! I don't have a full answer for that one in demo mode. But I'm great with math, jokes, and fun facts \u2014 type 'what can you do?' to see!",
+      "I wish I could help with that! Try connecting me to Claude for full conversations. In the meantime, math, fun facts, and banter are my specialties!",
     ]);
   }
 
-  // ===== Safe Math Evaluation =====
+  // ===== Word-Based Math =====
 
   /**
-   * Safely evaluate a math expression.
-   *
-   * Only allows: digits, spaces, parentheses, decimal points,
-   * and operators +, -, *, /
-   *
-   * Uses a recursive descent parser (no eval, no Function constructor).
-   * Returns the numeric result or null if the input is not a valid expression.
+   * Parse natural language math like:
+   * - "what is 5 plus 3"
+   * - "calculate 10 times 2"
+   * - "how much is 100 divided by 4"
+   * - "15 minus 7"
    */
-  function tryMath(input) {
-    const expr = input.trim();
+  function tryWordMath(lower) {
+    var match;
 
-    // Quick reject: must contain at least one digit and one operator
+    // "what is X op Y" / "calculate X op Y" / "how much is X op Y"
+    match = lower.match(/(?:what(?:'s| is)|calculate|compute|how much is|solve)\s+(-?\d+\.?\d*)\s+(plus|minus|times|multiplied by|divided by|over)\s+(-?\d+\.?\d*)/i);
+    if (match) return computeWordMath(parseFloat(match[1]), match[2].toLowerCase(), parseFloat(match[3]));
+
+    // Direct: "X plus/minus/times/divided by Y"
+    match = lower.match(/^(-?\d+\.?\d*)\s+(plus|minus|times|multiplied by|divided by|over)\s+(-?\d+\.?\d*)$/i);
+    if (match) return computeWordMath(parseFloat(match[1]), match[2].toLowerCase(), parseFloat(match[3]));
+
+    // "add X and Y"
+    match = lower.match(/(?:add)\s+(-?\d+\.?\d*)\s+(?:and|to)\s+(-?\d+\.?\d*)/i);
+    if (match) return formatMathAnswer(parseFloat(match[1]) + parseFloat(match[2]), match[1], "plus", match[2]);
+
+    // "subtract X from Y" (result = Y - X)
+    match = lower.match(/(?:subtract)\s+(-?\d+\.?\d*)\s+from\s+(-?\d+\.?\d*)/i);
+    if (match) return formatMathAnswer(parseFloat(match[2]) - parseFloat(match[1]), match[2], "minus", match[1]);
+
+    // "multiply X by Y"
+    match = lower.match(/(?:multiply)\s+(-?\d+\.?\d*)\s+(?:by|and|times)\s+(-?\d+\.?\d*)/i);
+    if (match) return formatMathAnswer(parseFloat(match[1]) * parseFloat(match[2]), match[1], "times", match[2]);
+
+    // "divide X by Y"
+    match = lower.match(/(?:divide)\s+(-?\d+\.?\d*)\s+by\s+(-?\d+\.?\d*)/i);
+    if (match) {
+      var divisor = parseFloat(match[2]);
+      if (divisor === 0) return "Oops, can't divide by zero! Even I know that's a no-go.";
+      return formatMathAnswer(parseFloat(match[1]) / divisor, match[1], "divided by", match[2]);
+    }
+
+    return null;
+  }
+
+  function computeWordMath(a, op, b) {
+    var result;
+    switch (op) {
+      case "plus": result = a + b; break;
+      case "minus": result = a - b; break;
+      case "times":
+      case "multiplied by": result = a * b; break;
+      case "divided by":
+      case "over":
+        if (b === 0) return "Oops, can't divide by zero! That breaks the universe.";
+        result = a / b;
+        break;
+      default: return null;
+    }
+    return formatMathAnswer(result, a, op, b);
+  }
+
+  function formatMathAnswer(result, a, op, b) {
+    var rounded = Math.round(result * 1e10) / 1e10;
+    var reactions = ["", "", "Let's see... ", "Easy one! "];
+    return pick(reactions) + a + " " + op + " " + b + " = " + rounded;
+  }
+
+  // ===== Safe Math Evaluation (Arithmetic Expressions) =====
+
+  function tryMath(input) {
+    var expr = input.trim();
     if (!/\d/.test(expr)) return null;
     if (!/[+\-*/]/.test(expr)) return null;
-
-    // Strict whitelist: only allow safe characters
     if (!/^[\d\s()+\-*/.]+$/.test(expr)) return null;
-
-    // Reject empty parens
     if (/\(\s*\)/.test(expr)) return null;
 
     try {
-      const result = parseMathExpression(expr);
+      var result = parseMathExpression(expr);
       if (result === null || !isFinite(result)) return null;
-      // Round to avoid floating point noise
       return Math.round(result * 1e10) / 1e10;
     } catch {
       return null;
     }
   }
 
-  /**
-   * Recursive descent parser for basic math.
-   * Grammar:
-   *   expression = term (('+' | '-') term)*
-   *   term       = factor (('*' | '/') factor)*
-   *   factor     = '-' factor | '(' expression ')' | number
-   */
   function parseMathExpression(str) {
-    let pos = 0;
+    var pos = 0;
 
     function skipWhitespace() {
       while (pos < str.length && str[pos] === " ") pos++;
@@ -595,7 +845,7 @@
 
     function parseNumber() {
       skipWhitespace();
-      let start = pos;
+      var start = pos;
       if (str[pos] === "-") pos++;
       if (pos >= str.length || (str[pos] < "0" || str[pos] > "9") && str[pos] !== ".") {
         pos = start;
@@ -606,7 +856,7 @@
         pos++;
         while (pos < str.length && str[pos] >= "0" && str[pos] <= "9") pos++;
       }
-      const num = parseFloat(str.substring(start, pos));
+      var num = parseFloat(str.substring(start, pos));
       if (isNaN(num)) return null;
       return num;
     }
@@ -615,29 +865,29 @@
       skipWhitespace();
       if (str[pos] === "-") {
         pos++;
-        const val = parseFactor();
+        var val = parseFactor();
         if (val === null) return null;
         return -val;
       }
       if (str[pos] === "(") {
         pos++;
-        const val = parseExpression();
+        var val2 = parseExpression();
         skipWhitespace();
         if (str[pos] !== ")") return null;
         pos++;
-        return val;
+        return val2;
       }
       return parseNumber();
     }
 
     function parseTerm() {
-      let left = parseFactor();
+      var left = parseFactor();
       if (left === null) return null;
       skipWhitespace();
       while (pos < str.length && (str[pos] === "*" || str[pos] === "/")) {
-        const op = str[pos];
+        var op = str[pos];
         pos++;
-        const right = parseFactor();
+        var right = parseFactor();
         if (right === null) return null;
         if (op === "*") left *= right;
         else {
@@ -650,13 +900,13 @@
     }
 
     function parseExpression() {
-      let left = parseTerm();
+      var left = parseTerm();
       if (left === null) return null;
       skipWhitespace();
       while (pos < str.length && (str[pos] === "+" || str[pos] === "-")) {
-        const op = str[pos];
+        var op = str[pos];
         pos++;
-        const right = parseTerm();
+        var right = parseTerm();
         if (right === null) return null;
         if (op === "+") left += right;
         else left -= right;
@@ -665,7 +915,7 @@
       return left;
     }
 
-    const result = parseExpression();
+    var result = parseExpression();
     skipWhitespace();
     if (pos !== str.length) return null;
     return result;

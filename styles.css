@@ -366,6 +366,12 @@ html, body {
   color: var(--text-muted);
 }
 
+.mode-hint {
+  font-size: 11px;
+  color: var(--accent);
+  margin-left: 8px;
+}
+
 /* ===== Toast ===== */
 .toast-container {
   position: fixed;

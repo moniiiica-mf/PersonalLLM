@@ -1,0 +1,13 @@
+{
+  "name": "monicas-llm",
+  "version": "1.0.0",
+  "description": "Monica's LLM — A personal chat interface powered by Claude",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "express": "^4.21.0"
+  }
+}
