@@ -528,6 +528,15 @@
           : "Right now I'm running in demo mode with built-in responses. Connect me to Claude for full conversations!");
     }
 
+    // --- Personal info about Monica ---
+    if (lower.includes("high school") || lower.includes("highschool")) {
+      return "Monica went to St Mildred's-Lightbourn School\nAn independent all-girls school in Oakville, Ontario Canada.";
+    }
+
+    if (lower.includes("university") || lower.includes("college") || lower.includes("school") || lower.includes("where did you study") || lower.includes("where do you study") || lower.includes("education")) {
+      return "Monica went to University of Waterloo from 2023 - 2025\nLater transferred to ArtCenter College of Design in 2025 till now.";
+    }
+
     // --- What can you do ---
     if (
       lower.includes("what can you do") || lower.includes("what do you do") ||
