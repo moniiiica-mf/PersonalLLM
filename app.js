@@ -533,7 +533,7 @@
       return "Monica went to St Mildred's-Lightbourn School\nAn independent all-girls school in Oakville, Ontario Canada.";
     }
 
-    if (lower.includes("university") || lower.includes("college") || lower.includes("school") || lower.includes("where did you study") || lower.includes("where do you study") || lower.includes("education")) {
+    if (lower.includes("university") || lower.includes("college") || lower.includes("where did you study") || lower.includes("where do you study") || lower.includes("education") || /what.*school/i.test(lower)) {
       return "Monica went to University of Waterloo from 2023 - 2025\nLater transferred to ArtCenter College of Design in 2025 till now.";
     }
 
