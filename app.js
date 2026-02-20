@@ -625,6 +625,21 @@
       ].join("\n");
     }
 
+    // --- Math (evaluated early so numbers aren't caught by keyword matches) ---
+
+    // Word-based math: "what is 5 plus 3", "calculate 10 times 2"
+    var wordMathResult = tryWordMath(lower);
+    if (wordMathResult !== null) {
+      return tonePreamble(text) + wordMathResult;
+    }
+
+    // Arithmetic expressions: "2+2", "(5+3)/2", "42*18"
+    var mathResult = tryMath(text);
+    if (mathResult !== null) {
+      var reactions = ["Let me crunch that... ", "Math time! ", "Ooh, numbers! ", "", ""];
+      return pick(reactions) + text + " = " + mathResult;
+    }
+
     // --- Weather ---
     if (lower.includes("weather") || lower.includes("temperature outside")) {
       return "I wish I could check the weather for you! I don't have internet access in demo mode. Try your phone's weather app or searching online. Anything else I can help with?";
@@ -642,7 +657,7 @@
     }
 
     // --- Meaning of life ---
-    if (lower.includes("meaning of life") || lower.includes("42")) {
+    if (lower.includes("meaning of life") || /^42[.!?\s]*$/.test(lower)) {
       return pick([
         "42, obviously! But between you and me, I think the real meaning is in the little moments \u2014 like chatting on a random afternoon.",
         "The meaning of life? Douglas Adams nailed it with 42. But I think it's about connection, curiosity, and fun facts.",
@@ -698,19 +713,6 @@
         "Oh no, boredom! Tell me the most random thing about yourself and I'll try to guess something else about you.",
         "Let's fix that! Ask me anything \u2014 a fun fact, a joke, or just say 'random chat' and let's go!",
       ]);
-    }
-
-    // --- Word-based math: "what is 5 plus 3", "calculate 10 times 2" ---
-    var wordMathResult = tryWordMath(lower);
-    if (wordMathResult !== null) {
-      return tonePreamble(text) + wordMathResult;
-    }
-
-    // --- Arithmetic expressions: "2+2", "(5+3)/2" ---
-    var mathResult = tryMath(text);
-    if (mathResult !== null) {
-      var reactions = ["Let me crunch that... ", "Math time! ", "Ooh, numbers! ", "", ""];
-      return pick(reactions) + text + " = " + mathResult;
     }
 
     // --- Yes/No responses ---
