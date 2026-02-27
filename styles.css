@@ -163,18 +163,19 @@ html, body {
   padding: 10px 18px;
   font-size: 14px;
   font-family: var(--font);
-  color: var(--text);
+  color: var(--accent);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
   cursor: pointer;
-  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition), color var(--transition);
   line-height: 1.4;
 }
 
 .chip:hover {
-  background: var(--surface-hover);
-  border-color: #b0b3c6;
+  background: var(--accent);
+  color: var(--user-text);
+  border-color: var(--accent);
   box-shadow: var(--shadow-sm);
 }
 
