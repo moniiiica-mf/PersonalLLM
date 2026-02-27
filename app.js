@@ -578,13 +578,13 @@
       ]);
     }
 
-    // Work Experience follow-ups — detect if the user is answering the internship question
+    // Work Experience follow-ups — detect if the user is asking about a specific internship
+    // Search entire conversation (not just last message) so follow-ups work in any order
     if (lower.includes("glou")) {
-      var lastAssistant = "";
-      for (var i = conversation.length - 1; i >= 0; i--) {
-        if (conversation[i].role === "assistant") { lastAssistant = conversation[i].content; break; }
-      }
-      if (lastAssistant.toLowerCase().includes("glou") && lastAssistant.toLowerCase().includes("beijing")) {
+      var mentionedWork = conversation.some(function(m) {
+        return m.role === "assistant" && m.content.toLowerCase().includes("glou") && m.content.toLowerCase().includes("beijing");
+      });
+      if (mentionedWork) {
         return pick([
           "At Glou.co, Monica led and contributed to user-centric interface design, ensuring a seamless and visually appealing experience. She translated concepts into prototypes, refining designs through user feedback. She played a key role in brainstorming and constructively critiquing designs within cross-functional teams, making sure design and development goals stayed aligned. She also conducted user interviews and usability testing, integrating feedback into design iterations to match user expectations.",
           "During her time at Glou.co, Monica focused on user-centric interface design to create seamless, visually engaging experiences. She turned concepts into prototypes and refined them based on user feedback. Monica was also actively involved in design critiques and brainstorming sessions with cross-functional teams, ensuring design and development remained aligned. Additionally, she carried out user interviews and usability testing to integrate real feedback into her design iterations.",
@@ -594,11 +594,10 @@
     }
 
     if (lower.includes("beijing") || lower.includes("zhongke") || lower.includes("huilian")) {
-      var lastAssistant2 = "";
-      for (var j = conversation.length - 1; j >= 0; j--) {
-        if (conversation[j].role === "assistant") { lastAssistant2 = conversation[j].content; break; }
-      }
-      if (lastAssistant2.toLowerCase().includes("glou") && lastAssistant2.toLowerCase().includes("beijing")) {
+      var mentionedWork2 = conversation.some(function(m) {
+        return m.role === "assistant" && m.content.toLowerCase().includes("glou") && m.content.toLowerCase().includes("beijing");
+      });
+      if (mentionedWork2) {
         return pick([
           "At Beijing Zhongke Huilian Information Technology Co., Ltd., Monica assisted in user interaction and graphic design, adapting designs to user standards. She contributed to web and wireframe design, ensuring seamless progression from low- to high-fidelity prototypes while integrating UX principles. She worked with the Interaction Design Department to align aesthetics with functionality, collaborated with senior designers to refine concepts, and fostered a positive team environment. Monica also conducted user research and usability testing to inform design decisions, integrating user feedback into revisions alongside senior colleagues to enhance user-centered design solutions.",
           "During her internship at Beijing Zhongke Huilian Information Technology Co., Ltd., Monica worked on user interaction and graphic design, making sure designs met user standards. She played a part in web and wireframe design, helping projects move smoothly from low- to high-fidelity prototypes with UX principles baked in. Collaborating with the Interaction Design Department, she balanced aesthetics and functionality, worked closely with senior designers to refine concepts, and helped create a supportive team atmosphere. She also led user research and usability testing efforts, folding feedback into design revisions to strengthen user-centered solutions.",
