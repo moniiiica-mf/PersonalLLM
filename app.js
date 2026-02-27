@@ -558,11 +558,89 @@
     }
 
     // --- Personal info about Monica ---
+
+    // "Tell me about Monica"
+    if (lower.includes("tell me about monica") || lower.includes("who is monica") || lower.includes("about monica")) {
+      return pick([
+        "Monica is an Interaction Design student at ArtCenter College of Design who loves creating interactive experiences — both digital and physical — for users. She's passionate about design but doesn't limit herself to the digital realm; in her free time, she also works as an art director and production designer for films and sets.",
+        "Monica is currently studying Interaction Design at ArtCenter College of Design, where she focuses on building interactive experiences for users in both digital and physical spaces. Beyond her design work, she enjoys taking on roles as an art director and production designer for film and set projects in her spare time.",
+        "Meet Monica — an Interaction Design student at ArtCenter College of Design with a passion for crafting interactive experiences, whether they're digital or physical. She's not just about screens and interfaces though; she also loves working as an art director and production designer on films and sets whenever she gets the chance.",
+        "Monica is an Interaction Design student attending ArtCenter College of Design. She's driven by a love for making interactive experiences that span both digital and physical mediums. When she's not focused on her design studies, you'll find her working as an art director and production designer for various film and set projects.",
+      ]);
+    }
+
+    // "Her Education?"
+    if (lower.includes("her education") || lower.includes("education?")) {
+      return pick([
+        "Monica is currently pursuing a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 and expects to complete by 2028. Before that, she earned a Bachelor of Global Business and Digital Art from the University of Waterloo, attending from September 2023 to April 2025. She also participated in Cornell University's SCE Summer University Program in July 2023.",
+        "For her education, Monica began with the Summer University Program at Cornell University SCE in July 2023. She then went on to study Global Business and Digital Art at the University of Waterloo from September 2023 through April 2025. Currently, she's working toward a Bachelor of Science in Interaction Design at ArtCenter College of Design, having started in September 2025 with an expected graduation in 2028.",
+        "Monica's academic journey includes a Bachelor of Global Business and Digital Art from the University of Waterloo (September 2023 – April 2025), a Summer University Program at Cornell University SCE in July 2023, and her current studies — a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 and plans to finish by 2028.",
+        "Education-wise, Monica attended Cornell University's SCE Summer University Program in July 2023, then completed a Bachelor of Global Business and Digital Art at the University of Waterloo between September 2023 and April 2025. She's now enrolled at ArtCenter College of Design, pursuing a Bachelor of Science in Interaction Design from September 2025, with an expected graduation in 2028.",
+      ]);
+    }
+
+    // "Work Experience?" — initial prompt asks which internship
+    if (lower.includes("work experience")) {
+      return pick([
+        "Monica has two internship experiences — one at Glou.co in 2022, and another at Beijing Zhongke Huilian Information Technology Co., Ltd. Which one would you like to know more about?",
+        "Monica gained professional experience through two internships: one at Glou.co in 2022 and another at Beijing Zhongke Huilian Information Technology Co., Ltd. Which internship are you interested in hearing about?",
+        "When it comes to work experience, Monica completed two internships — one with Glou.co in 2022 and one with Beijing Zhongke Huilian Information Technology Co., Ltd. Would you like to hear about Glou.co or Beijing Zhongke Huilian?",
+      ]);
+    }
+
+    // Work Experience follow-ups — detect if the user is answering the internship question
+    if (lower.includes("glou")) {
+      var lastAssistant = "";
+      for (var i = conversation.length - 1; i >= 0; i--) {
+        if (conversation[i].role === "assistant") { lastAssistant = conversation[i].content; break; }
+      }
+      if (lastAssistant.toLowerCase().includes("glou") && lastAssistant.toLowerCase().includes("beijing")) {
+        return pick([
+          "At Glou.co, Monica led and contributed to user-centric interface design, ensuring a seamless and visually appealing experience. She translated concepts into prototypes, refining designs through user feedback. She played a key role in brainstorming and constructively critiquing designs within cross-functional teams, making sure design and development goals stayed aligned. She also conducted user interviews and usability testing, integrating feedback into design iterations to match user expectations.",
+          "During her time at Glou.co, Monica focused on user-centric interface design to create seamless, visually engaging experiences. She turned concepts into prototypes and refined them based on user feedback. Monica was also actively involved in design critiques and brainstorming sessions with cross-functional teams, ensuring design and development remained aligned. Additionally, she carried out user interviews and usability testing to integrate real feedback into her design iterations.",
+          "Monica's internship at Glou.co involved leading user-centric interface design work, where she ensured experiences were both seamless and visually compelling. She brought concepts to life as prototypes and iterated on them through user feedback. Brainstorming and providing constructive design critiques within cross-functional teams was a key part of her role, helping keep design and development goals in sync. She rounded out her work with user interviews and usability testing to make sure designs met user expectations.",
+        ]);
+      }
+    }
+
+    if (lower.includes("beijing") || lower.includes("zhongke") || lower.includes("huilian")) {
+      var lastAssistant2 = "";
+      for (var j = conversation.length - 1; j >= 0; j--) {
+        if (conversation[j].role === "assistant") { lastAssistant2 = conversation[j].content; break; }
+      }
+      if (lastAssistant2.toLowerCase().includes("glou") && lastAssistant2.toLowerCase().includes("beijing")) {
+        return pick([
+          "At Beijing Zhongke Huilian Information Technology Co., Ltd., Monica assisted in user interaction and graphic design, adapting designs to user standards. She contributed to web and wireframe design, ensuring seamless progression from low- to high-fidelity prototypes while integrating UX principles. She worked with the Interaction Design Department to align aesthetics with functionality, collaborated with senior designers to refine concepts, and fostered a positive team environment. Monica also conducted user research and usability testing to inform design decisions, integrating user feedback into revisions alongside senior colleagues to enhance user-centered design solutions.",
+          "During her internship at Beijing Zhongke Huilian Information Technology Co., Ltd., Monica worked on user interaction and graphic design, making sure designs met user standards. She played a part in web and wireframe design, helping projects move smoothly from low- to high-fidelity prototypes with UX principles baked in. Collaborating with the Interaction Design Department, she balanced aesthetics and functionality, worked closely with senior designers to refine concepts, and helped create a supportive team atmosphere. She also led user research and usability testing efforts, folding feedback into design revisions to strengthen user-centered solutions.",
+          "Monica's role at Beijing Zhongke Huilian Information Technology Co., Ltd. involved assisting with user interaction and graphic design while adapting designs to meet user standards. She contributed to both web and wireframe design, ensuring a seamless flow from low-fidelity to high-fidelity prototypes grounded in UX principles. Working alongside the Interaction Design Department, she aligned visual aesthetics with functionality and collaborated with senior designers to polish concepts. Monica also carried out user research and usability testing, incorporating feedback into revisions and partnering with senior colleagues to improve user-centered design outcomes.",
+        ]);
+      }
+    }
+
+    // "Talk about a Project"
+    if (lower.includes("talk about a project") || lower.includes("about a project") || lower.includes("her project") || lower.includes("monica's project")) {
+      return pick([
+        "Monica has worked on many different projects, but one of the most recent ones is a production set design project for a friend's film. She handled the creative direction and physical set construction. Would you like to know more?",
+        "Among Monica's various projects, one that stands out recently is a production set design she did for a friend's film project — she took charge of the art direction and set building. Want to hear more about it?",
+        "Monica has quite a few projects under her belt, but her most recent one is a production set design for a friend's film. She was responsible for the creative vision and physical design of the sets. Interested in learning more?",
+        "One of Monica's most recent endeavors is a production set design project she took on for a friend's film. She oversaw the art direction and built out the physical sets. Would you like to know more about it?",
+      ]);
+    }
+
+    // "What are Her Skills?" / "Skills?"
+    if (lower.includes("skill")) {
+      return pick([
+        "Here are Monica's skills!\n\nTechnical Skills:\n- Design: Adobe Creative Suite (Photoshop, Illustrator), Sketch, Figma, InVision\n- User Research and Analysis\n- Graphic Design and Typography: Color Theory, Icon Design, Typography Design\n\nSoft Skills:\n- Design Trends Awareness\n- Innovative Thinking\n- Communication Skills\n- User Interface Optimization\n- User Experience Improvement\n- Project Management and Collaboration",
+        "Monica brings a solid mix of technical and soft skills!\n\nTechnical Skills:\n- Design Tools: Adobe Creative Suite (Photoshop, Illustrator), Sketch, Figma, InVision\n- User Research and Analysis\n- Graphic Design and Typography: Color Theory, Icon Design, Typography Design\n\nSoft Skills:\n- Design Trends Awareness\n- Innovative Thinking\n- Communication Skills\n- User Interface Optimization\n- User Experience Improvement\n- Project Management and Collaboration",
+        "Monica's skill set covers both the technical and interpersonal side of design!\n\nTechnical Skills:\n- Adobe Creative Suite (Photoshop, Illustrator), Sketch, Figma, InVision\n- User Research and Analysis\n- Graphic Design and Typography: Color Theory, Icon Design, Typography Design\n\nSoft Skills:\n- Design Trends Awareness\n- Innovative Thinking\n- Communication Skills\n- User Interface Optimization\n- User Experience Improvement\n- Project Management and Collaboration",
+      ]);
+    }
+
     if (lower.includes("high school") || lower.includes("highschool")) {
       return "Monica went to St Mildred's-Lightbourn School\nAn independent all-girls school in Oakville, Ontario Canada.";
     }
 
-    if (lower.includes("university") || lower.includes("college") || lower.includes("where did you study") || lower.includes("where do you study") || lower.includes("education") || /what.*school/i.test(lower)) {
+    if (lower.includes("university") || lower.includes("college") || lower.includes("where did you study") || lower.includes("where do you study") || /what.*school/i.test(lower)) {
       return "Monica went to University of Waterloo from 2023 - 2025\nLater transferred to ArtCenter College of Design in 2025 till now.";
     }
 
