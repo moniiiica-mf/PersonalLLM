@@ -34,7 +34,7 @@
     "Her Education?",
     "Work Experience?",
     "Talk about a Project",
-    "Skills?",
+    "What are Her Skills?",
   ];
   const REGULAR_PROMPTS = [
     "Let's have a random chat",
