@@ -29,25 +29,15 @@
   // ===== Prompt Chip Pool (randomly selected on each load) =====
   // Important prompts are prioritized — at least 3 always shown per render
   const IMPORTANT_PROMPTS = [
-    "Ask me a question",
     "Tell me about Monica",
     "Her Education?",
     "Work Experience?",
     "Talk about a Project",
     "What are Her Skills?",
   ];
-  const REGULAR_PROMPTS = [
-    "Let's have a random chat",
-    "Guess my mood",
-    "How are you today?",
-    "What can you do?",
-    "Tell me a fun fact",
-    "Tell me a joke",
-    "What's 42 * 18?",
-    "Help me write an email",
-  ];
-  const CHIPS_TO_SHOW = 4;
-  const IMPORTANT_CHIPS_MIN = 3; // guaranteed important chips per render
+  const REGULAR_PROMPTS = [];
+  const CHIPS_TO_SHOW = 5;
+  const IMPORTANT_CHIPS_MIN = 5; // show all Monica-related chips
 
   // ===== In-Memory State (never persisted) =====
   let conversation = []; // Array of { role, content, createdAt }
