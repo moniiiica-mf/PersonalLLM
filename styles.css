@@ -164,8 +164,9 @@ html, body {
   font-size: 14px;
   font-family: var(--font);
   color: var(--accent);
+  font-weight: 500;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--accent);
   border-radius: 999px;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition), box-shadow var(--transition), color var(--transition);
@@ -184,18 +185,6 @@ html, body {
   outline-offset: 2px;
 }
 
-/* Important / featured prompt chips */
-.chip-important {
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 500;
-}
-
-.chip-important:hover {
-  background: var(--accent);
-  color: var(--user-text);
-  border-color: var(--accent);
-}
 
 /* ===== Chat Screen ===== */
 .chat-screen {
