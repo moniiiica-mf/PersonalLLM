@@ -183,6 +183,19 @@ html, body {
   outline-offset: 2px;
 }
 
+/* Important / featured prompt chips */
+.chip-important {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.chip-important:hover {
+  background: var(--accent);
+  color: var(--user-text);
+  border-color: var(--accent);
+}
+
 /* ===== Chat Screen ===== */
 .chat-screen {
   flex: 1;

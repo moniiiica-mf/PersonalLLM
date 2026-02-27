@@ -27,9 +27,17 @@
   const chipsContainer = $("#chips");
 
   // ===== Prompt Chip Pool (randomly selected on each load) =====
-  const ALL_PROMPTS = [
-    "Let's have a random chat",
+  // Important prompts are prioritized — at least 3 always shown per render
+  const IMPORTANT_PROMPTS = [
     "Ask me a question",
+    "Tell me about Monica",
+    "Her Education?",
+    "Work Experience?",
+    "Talk about a Project",
+    "Skills?",
+  ];
+  const REGULAR_PROMPTS = [
+    "Let's have a random chat",
     "Guess my mood",
     "How are you today?",
     "What can you do?",
@@ -39,6 +47,7 @@
     "Help me write an email",
   ];
   const CHIPS_TO_SHOW = 4;
+  const IMPORTANT_CHIPS_MIN = 3; // guaranteed important chips per render
 
   // ===== In-Memory State (never persisted) =====
   let conversation = []; // Array of { role, content, createdAt }
@@ -80,15 +89,35 @@
     }
   }
 
-  /** Render a random selection of prompt chips */
+  /** Fisher-Yates shuffle (in-place) */
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  /** Render a random selection of prompt chips — important prompts are prioritized */
   function renderChips() {
-    const shuffled = ALL_PROMPTS.slice().sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, CHIPS_TO_SHOW);
+    const important = shuffle(IMPORTANT_PROMPTS.slice());
+    const regular = shuffle(REGULAR_PROMPTS.slice());
+
+    // Pick IMPORTANT_CHIPS_MIN from important, fill the rest from regular
+    const picked = important.slice(0, IMPORTANT_CHIPS_MIN);
+    const remaining = CHIPS_TO_SHOW - picked.length;
+    // Fill remaining slots from regular prompts
+    picked.push(...regular.slice(0, remaining));
+
+    // Shuffle final selection so important chips aren't always first
+    shuffle(picked);
+
+    const importantSet = new Set(IMPORTANT_PROMPTS);
 
     chipsContainer.textContent = "";
-    selected.forEach((prompt) => {
+    picked.forEach((prompt) => {
       const btn = document.createElement("button");
-      btn.className = "chip";
+      btn.className = importantSet.has(prompt) ? "chip chip-important" : "chip";
       btn.setAttribute("role", "listitem");
       btn.setAttribute("data-prompt", prompt);
       btn.textContent = prompt;
