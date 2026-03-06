@@ -609,18 +609,18 @@
     // "Talk about a Project"
     if (lower.includes("talk about a project") || lower.includes("about a project") || lower.includes("her project") || lower.includes("monica's project") || lower.includes("her projects") || lower.includes("monica's projects")) {
       return pick([
-        "One of Monica's most recent projects is a Dining Scene Film where she worked as the Production Designer. She focused on set design and costume coordination for a key dining scene, shaping the visual environment so that everything on screen — objects, food, characters — felt intentional and visually cohesive. Would you like to know more?",
-        "Monica recently worked as a Production Designer on a Dining Scene Film project. Her role involved designing the set and coordinating costumes for a central dining scene, with a major focus on a table filled with food that required careful composition planning for the camera. Want to hear more about it?",
-        "Among Monica's projects, a standout is her work as Production Designer on a Dining Scene Film. She was responsible for set design and costume coordination, making sure the visual environment felt intentional and cohesive on camera. A big part of the scene centered around a carefully composed table of food. Interested in learning more?",
+        "One of Monica's most recent projects is a Stockholm Dilemma where she worked as the Production Designer. She focused on set design and costume coordination for a key dining scene, shaping the visual environment so that everything on screen — objects, food, characters — felt intentional and visually cohesive. Would you like to know more?",
+        "Monica recently worked as a Production Designer on a Stockholm Dilemma project. Her role involved designing the set and coordinating costumes for a central dining scene, with a major focus on a table filled with food that required careful composition planning for the camera. Want to hear more about it?",
+        "Among Monica's projects, a standout is her work as Production Designer on a Stockholm Dilemma. She was responsible for set design and costume coordination, making sure the visual environment felt intentional and cohesive on camera. A big part of the scene centered around a carefully composed table of food. Interested in learning more?",
       ]);
     }
 
     // Project follow-ups — direct keyword match for set design / production design / film project / dining scene
-    if (lower.includes("set design") || lower.includes("production design") || lower.includes("art direction") || lower.includes("film project") || lower.includes("dining scene")) {
+    if (lower.includes("set design") || lower.includes("production design") || lower.includes("art direction") || lower.includes("film project") || lower.includes("dining scene") || lower.includes("stockholm dilemma") || lower.includes("stockholm")) {
       return pick([
-        "For the Dining Scene Film, Monica worked as Production Designer — handling set design and costume coordination for a key dining scene. The scene centered around a table filled with food, which required careful planning to make sure the composition worked both narratively and visually on camera. She started by photographing the empty table on location with the director to understand camera framing and spatial constraints, then added plates and objects to capture how different elements would sit within the frame.",
-        "Monica's production design work on the Dining Scene Film involved shaping the entire visual environment of a dining scene. A central challenge was composing a table filled with food that looked intentional on camera. She began with spatial reference photography on location — shooting the empty table setup to understand the framing, then layering in objects to test scale, negative space, and how everything would read from the camera's perspective.",
-        "In the Dining Scene Film project, Monica served as Production Designer, focusing on set styling and the visual composition of a key dining scene. She worked closely with the director, starting with reference photography of the location to understand spatial constraints and camera framing. From there, she planned the food plating, table arrangement, and overall set styling to ensure everything felt cohesive on screen.",
+        "For the Stockholm Dilemma, Monica worked as Production Designer — handling set design and costume coordination for a key dining scene. The scene centered around a table filled with food, which required careful planning to make sure the composition worked both narratively and visually on camera. She started by photographing the empty table on location with the director to understand camera framing and spatial constraints, then added plates and objects to capture how different elements would sit within the frame.",
+        "Monica's production design work on the Stockholm Dilemma involved shaping the entire visual environment of a dining scene. A central challenge was composing a table filled with food that looked intentional on camera. She began with spatial reference photography on location — shooting the empty table setup to understand the framing, then layering in objects to test scale, negative space, and how everything would read from the camera's perspective.",
+        "In the Stockholm Dilemma project, Monica served as Production Designer, focusing on set styling and the visual composition of a key dining scene. She worked closely with the director, starting with reference photography of the location to understand spatial constraints and camera framing. From there, she planned the food plating, table arrangement, and overall set styling to ensure everything felt cohesive on screen.",
       ]);
     }
 
@@ -628,13 +628,13 @@
     if (/^(yes|yeah|yep|yup|sure|ok|okay|absolutely|definitely|of course|tell me more|more details|go on|continue|more about it|i'd like to know|i would like to know)$/i.test(lower) ||
         lower.includes("tell me more") || lower.includes("more details") || lower.includes("know more") || lower.includes("more about")) {
       var projectMentioned = conversation.some(function(m) {
-        return m.role === "assistant" && m.content.toLowerCase().includes("dining scene film");
+        return m.role === "assistant" && m.content.toLowerCase().includes("stockholm dilemma");
       });
       if (projectMentioned) {
         return pick([
-          "For the Dining Scene Film, Monica worked as Production Designer — handling set design and costume coordination. The scene centered around a table filled with food, which required careful planning for composition on camera. She started with spatial reference photography on location, then moved into visual exploration using style boards and sketches to test food placement, color balance, density vs. negative space, and how the table would read in overhead shots. She also created concept visualizations using Viscom AI, Midjourney, and Procreate for key shots, helping the director evaluate compositions during pre-production.",
-          "As Production Designer on the Dining Scene Film, Monica was responsible for set design and costume coordination. The process started with photographing the empty table on location to understand camera framing, then layering in objects to test scale and spatial composition. From there, she developed style boards and rough sketches exploring food placement, color balance, and negative space. For one key shot — a wide composition of the actor at the table next to an open door — she used Viscom AI, Midjourney, and Procreate to generate concept images exploring framing, lighting atmosphere, and actor positioning.",
-          "Monica's Dining Scene Film work involved the full production design pipeline. She began with spatial reference photography on location, then created style boards and sketches to explore food plating composition, color balance, and how the table arrangement would read on camera. She also produced concept visualizations using AI tools like Viscom and Midjourney alongside Procreate sketches, which helped the director quickly evaluate potential compositions for key shots during pre-production. The combination of set styling, food plating design, and visual concept development shaped the overall aesthetic of the scene.",
+          "For the Stockholm Dilemma, Monica worked as Production Designer — handling set design and costume coordination. The scene centered around a table filled with food, which required careful planning for composition on camera. She started with spatial reference photography on location, then moved into visual exploration using style boards and sketches to test food placement, color balance, density vs. negative space, and how the table would read in overhead shots. She also created concept visualizations using Viscom AI, Midjourney, and Procreate for key shots, helping the director evaluate compositions during pre-production.",
+          "As Production Designer on the Stockholm Dilemma, Monica was responsible for set design and costume coordination. The process started with photographing the empty table on location to understand camera framing, then layering in objects to test scale and spatial composition. From there, she developed style boards and rough sketches exploring food placement, color balance, and negative space. For one key shot — a wide composition of the actor at the table next to an open door — she used Viscom AI, Midjourney, and Procreate to generate concept images exploring framing, lighting atmosphere, and actor positioning.",
+          "Monica's Stockholm Dilemma work involved the full production design pipeline. She began with spatial reference photography on location, then created style boards and sketches to explore food plating composition, color balance, and how the table arrangement would read on camera. She also produced concept visualizations using AI tools like Viscom and Midjourney alongside Procreate sketches, which helped the director quickly evaluate potential compositions for key shots during pre-production. The combination of set styling, food plating design, and visual concept development shaped the overall aesthetic of the scene.",
         ]);
       }
     }
@@ -642,7 +642,7 @@
     // Project extended questions — role, tools, process, challenges, outcome, what she learned
     if (lower.includes("what did she do") || lower.includes("her role") || lower.includes("what was her role") || lower.includes("what was monica's role")) {
       var projectContext = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext) {
         return "Monica's role was Production Designer. She focused on set design and costume coordination for a key dining scene in the film. That meant shaping the visual environment of the space so that the objects, food, and characters on screen felt intentional and visually cohesive. She worked closely with the director throughout — from spatial reference photography and visual exploration to concept visualization and final set styling.";
@@ -651,16 +651,16 @@
 
     if (lower.includes("what tools") || lower.includes("which tools") || lower.includes("software") || lower.includes("what did she use")) {
       var projectContext2 = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext2) {
-        return "For the Dining Scene Film, Monica used a mix of digital and physical tools:\n\n- Viscom AI and Midjourney for concept visualization and exploring compositions\n- Procreate for sketches and visual exploration\n- Photography references for spatial planning and understanding camera framing\n- Sketching for rough style boards and composition tests\n- Physical set styling for the actual on-set food plating and table arrangement";
+        return "For the Stockholm Dilemma, Monica used a mix of digital and physical tools:\n\n- Viscom AI and Midjourney for concept visualization and exploring compositions\n- Procreate for sketches and visual exploration\n- Photography references for spatial planning and understanding camera framing\n- Sketching for rough style boards and composition tests\n- Physical set styling for the actual on-set food plating and table arrangement";
       }
     }
 
     if (lower.includes("process") || lower.includes("how did she") || lower.includes("steps") || lower.includes("workflow") || lower.includes("approach")) {
       var projectContext5 = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext5) {
         return "Monica's process had three main phases:\n\n1. Spatial Reference & Planning — She and the director photographed the empty table on location to understand camera framing and spatial constraints, then added plates and objects to capture how elements would sit within the frame.\n\n2. Visual Exploration & Style Development — Using the reference photos, she created style boards and rough sketches to test food placement, color balance, density vs. negative space, and how the table would read in overhead shots.\n\n3. Concept Visualization — For a key wide shot of the actor at the table next to an open door, she created concept images using Viscom AI, Midjourney, and Procreate to explore framing, lighting atmosphere, and actor positioning. These helped the director quickly evaluate compositions during pre-production.";
@@ -669,7 +669,7 @@
 
     if (lower.includes("concept") || lower.includes("visualization") || lower.includes("viscom") || lower.includes("midjourney")) {
       var projectContext6 = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext6) {
         return "For one important shot in the film — a wide, slightly straight-on composition of the actor sitting at the table next to an open door — Monica created early visual explorations using AI tools like Viscom and Midjourney, along with Procreate sketches. These concept images explored framing and camera distance, lighting atmosphere, actor positioning relative to the table, and the relationship between the doorway and the dining scene. The visuals helped the director quickly evaluate potential compositions during pre-production.";
@@ -678,7 +678,7 @@
 
     if (lower.includes("outcome") || lower.includes("result") || lower.includes("how did it turn out") || lower.includes("final")) {
       var projectContext7 = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext7) {
         return "Through the combination of set styling, food plating design, and visual concept development, Monica helped shape the overall aesthetic of the dining scene. The process ensured that the table arrangement and environment supported the mood of the film while remaining visually compelling on camera.";
@@ -687,7 +687,7 @@
 
     if (lower.includes("challenge") || lower.includes("difficult") || lower.includes("hardest part") || lower.includes("what was hard")) {
       var projectContext3 = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext3) {
         return "A major challenge was making the food-filled table work both narratively and visually on camera. Monica had to carefully plan the composition — balancing food placement, color, density vs. negative space, and how the table would read from different camera angles including overhead shots. Translating her digital explorations and sketches into the physical set styling while staying true to the visual direction was another key challenge she navigated.";
@@ -696,10 +696,10 @@
 
     if (lower.includes("what did she learn") || lower.includes("what she learn") || lower.includes("takeaway") || lower.includes("take away") || lower.includes("gain from")) {
       var projectContext4 = conversation.some(function(m) {
-        return m.role === "assistant" && (m.content.toLowerCase().includes("dining scene film") || m.content.toLowerCase().includes("production designer"));
+        return m.role === "assistant" && (m.content.toLowerCase().includes("stockholm dilemma") || m.content.toLowerCase().includes("production designer"));
       });
       if (projectContext4) {
-        return "From the Dining Scene Film project, Monica gained hands-on experience in the full production design pipeline — from spatial planning and visual exploration to concept visualization and physical set styling. She deepened her understanding of how spatial composition impacts storytelling on camera, and strengthened her ability to use both AI tools and traditional sketching to communicate visual ideas during pre-production. It reinforced her passion for creating intentional, cohesive visual environments.";
+        return "From the Stockholm Dilemma project, Monica gained hands-on experience in the full production design pipeline — from spatial planning and visual exploration to concept visualization and physical set styling. She deepened her understanding of how spatial composition impacts storytelling on camera, and strengthened her ability to use both AI tools and traditional sketching to communicate visual ideas during pre-production. It reinforced her passion for creating intentional, cohesive visual environments.";
       }
     }
 
