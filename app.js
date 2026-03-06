@@ -189,8 +189,8 @@
         sectionLabel.textContent = section.label;
         galleryWrap.appendChild(sectionLabel);
 
-        var grid = document.createElement("div");
-        grid.className = "gallery-grid";
+        var scroll = document.createElement("div");
+        scroll.className = "gallery-scroll";
         section.images.forEach(function(src) {
           var img = document.createElement("img");
           img.src = src;
@@ -200,9 +200,9 @@
           img.addEventListener("click", function() {
             openLightbox(src);
           });
-          grid.appendChild(img);
+          scroll.appendChild(img);
         });
-        galleryWrap.appendChild(grid);
+        galleryWrap.appendChild(scroll);
       });
 
       // Video section
@@ -211,12 +211,15 @@
       videoLabel.textContent = "Film Clip";
       galleryWrap.appendChild(videoLabel);
 
+      var videoWrap = document.createElement("div");
+      videoWrap.className = "gallery-video-wrap";
       var video = document.createElement("video");
       video.src = "Stockholm .mov";
       video.controls = true;
       video.className = "gallery-video";
       video.preload = "metadata";
-      galleryWrap.appendChild(video);
+      videoWrap.appendChild(video);
+      galleryWrap.appendChild(videoWrap);
 
       row.appendChild(galleryWrap);
     }
