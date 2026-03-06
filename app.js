@@ -140,6 +140,87 @@
 
     row.appendChild(bubble);
 
+    // Render project gallery if flagged
+    if (msg.gallery) {
+      var galleryWrap = document.createElement("div");
+      galleryWrap.className = "project-gallery";
+
+      var galleryTitle = document.createElement("div");
+      galleryTitle.className = "gallery-title";
+      galleryTitle.textContent = "Stockholm Dilemma — Project Gallery";
+      galleryWrap.appendChild(galleryTitle);
+
+      var sections = [
+        {
+          label: "Mood Board & References",
+          images: ["Film/Ideas.JPG", "Film/IMG_5121.jpg"]
+        },
+        {
+          label: "AI Concept Visualizations",
+          images: ["Film/Rough_2_Ai.png", "Film/Rough_3_Ai.png", "Film/Rough_4_Ai.png"]
+        },
+        {
+          label: "Behind the Scenes",
+          images: [
+            "Film/Set_Pic_1 Small.png",
+            "Film/Set_Pic_2 Small.png",
+            "Film/Set_Pic_3 Small.png",
+            "Film/Set_Pic_4 Small.png",
+            "Film/Set_Pic_5 Small.png"
+          ]
+        },
+        {
+          label: "Film Stills",
+          images: [
+            "Film/StockStills_Page_07.jpg",
+            "Film/StockStills_Page_13.jpg",
+            "Film/StockStills_Page_02.jpg",
+            "Film/StockStills_Page_17.jpg",
+            "Film/StockStills_Page_19.jpg",
+            "Film/StockStills_Page_20.jpg",
+            "Film/StockStills_Page_31.jpg"
+          ]
+        }
+      ];
+
+      sections.forEach(function(section) {
+        var sectionLabel = document.createElement("div");
+        sectionLabel.className = "gallery-section-label";
+        sectionLabel.textContent = section.label;
+        galleryWrap.appendChild(sectionLabel);
+
+        var grid = document.createElement("div");
+        grid.className = "gallery-grid";
+        section.images.forEach(function(src) {
+          var img = document.createElement("img");
+          img.src = src;
+          img.alt = section.label;
+          img.className = "gallery-img";
+          img.loading = "lazy";
+          img.addEventListener("click", function() {
+            openLightbox(src);
+          });
+          grid.appendChild(img);
+        });
+        galleryWrap.appendChild(grid);
+      });
+
+      // Video section
+      var videoLabel = document.createElement("div");
+      videoLabel.className = "gallery-section-label";
+      videoLabel.textContent = "Film Clip";
+      galleryWrap.appendChild(videoLabel);
+
+      var video = document.createElement("video");
+      video.src = "Stockholm .mov";
+      video.controls = true;
+      video.className = "gallery-video";
+      video.preload = "metadata";
+      galleryWrap.appendChild(video);
+
+      row.appendChild(galleryWrap);
+    }
+
     if (msg.createdAt) {
       const meta = document.createElement("div");
       meta.className = "msg-meta";
@@ -148,6 +229,20 @@
     }
 
     messagesEl.appendChild(row);
+  }
+
+  // Lightbox for gallery images
+  function openLightbox(src) {
+    var overlay = document.createElement("div");
+    overlay.className = "lightbox-overlay";
+    overlay.addEventListener("click", function() {
+      overlay.remove();
+    });
+    var img = document.createElement("img");
+    img.src = src;
+    img.className = "lightbox-img";
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
   }
 
   function showTyping() {
@@ -340,10 +435,15 @@
     hideTyping();
     setThinking(false);
 
+    // localBrain may return {text, gallery} or a plain string
+    var replyText = typeof reply === "object" && reply !== null ? reply.text : reply;
+    var showGallery = typeof reply === "object" && reply !== null && reply.gallery;
+
     const assistantMsg = {
       role: "assistant",
-      content: reply,
+      content: replyText,
       createdAt: new Date().toISOString(),
+      gallery: showGallery || false,
     };
     conversation.push(assistantMsg);
     appendMessageEl(assistantMsg);
@@ -608,20 +708,20 @@
 
     // "Talk about a Project"
     if (lower.includes("talk about a project") || lower.includes("about a project") || lower.includes("her project") || lower.includes("monica's project") || lower.includes("her projects") || lower.includes("monica's projects")) {
-      return pick([
+      return { text: pick([
         "One of Monica's most recent projects is a Stockholm Dilemma where she worked as the Production Designer. She focused on set design and costume coordination for a key dining scene, shaping the visual environment so that everything on screen — objects, food, characters — felt intentional and visually cohesive. Would you like to know more?",
         "Monica recently worked as a Production Designer on a Stockholm Dilemma project. Her role involved designing the set and coordinating costumes for a central dining scene, with a major focus on a table filled with food that required careful composition planning for the camera. Want to hear more about it?",
         "Among Monica's projects, a standout is her work as Production Designer on a Stockholm Dilemma. She was responsible for set design and costume coordination, making sure the visual environment felt intentional and cohesive on camera. A big part of the scene centered around a carefully composed table of food. Interested in learning more?",
-      ]);
+      ]), gallery: true };
     }
 
     // Project follow-ups — direct keyword match for set design / production design / film project / dining scene
     if (lower.includes("set design") || lower.includes("production design") || lower.includes("art direction") || lower.includes("film project") || lower.includes("dining scene") || lower.includes("stockholm dilemma") || lower.includes("stockholm")) {
-      return pick([
+      return { text: pick([
         "For the Stockholm Dilemma, Monica worked as Production Designer — handling set design and costume coordination for a key dining scene. The scene centered around a table filled with food, which required careful planning to make sure the composition worked both narratively and visually on camera. She started by photographing the empty table on location with the director to understand camera framing and spatial constraints, then added plates and objects to capture how different elements would sit within the frame.",
         "Monica's production design work on the Stockholm Dilemma involved shaping the entire visual environment of a dining scene. A central challenge was composing a table filled with food that looked intentional on camera. She began with spatial reference photography on location — shooting the empty table setup to understand the framing, then layering in objects to test scale, negative space, and how everything would read from the camera's perspective.",
         "In the Stockholm Dilemma project, Monica served as Production Designer, focusing on set styling and the visual composition of a key dining scene. She worked closely with the director, starting with reference photography of the location to understand spatial constraints and camera framing. From there, she planned the food plating, table arrangement, and overall set styling to ensure everything felt cohesive on screen.",
-      ]);
+      ]), gallery: true };
     }
 
     // Project follow-ups — "tell me more", "more details", "yes" after a project mention
