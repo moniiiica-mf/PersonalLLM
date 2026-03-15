@@ -224,6 +224,25 @@
       row.appendChild(galleryWrap);
     }
 
+    // Render follow-up suggestion chips
+    if (msg.chips && msg.chips.length > 0) {
+      var chipRow = document.createElement("div");
+      chipRow.className = "followup-chips";
+      msg.chips.forEach(function(chipData) {
+        var chipBtn = document.createElement("button");
+        chipBtn.className = "followup-chip";
+        chipBtn.textContent = chipData.label;
+        chipBtn.addEventListener("click", function() {
+          chipRow.remove();
+          msgInput.value = chipData.message;
+          autoResize();
+          handleSend();
+        });
+        chipRow.appendChild(chipBtn);
+      });
+      row.appendChild(chipRow);
+    }
+
     if (msg.createdAt) {
       const meta = document.createElement("div");
       meta.className = "msg-meta";
@@ -385,6 +404,10 @@
     msgInput.value = "";
     autoResize();
 
+    // Remove any existing follow-up chips from previous messages
+    var existingChips = messagesEl.querySelectorAll(".followup-chips");
+    existingChips.forEach(function(el) { el.remove(); });
+
     const userMsg = {
       role: "user",
       content: text,
@@ -438,15 +461,17 @@
     hideTyping();
     setThinking(false);
 
-    // localBrain may return {text, gallery} or a plain string
+    // localBrain may return {text, gallery, chips} or a plain string
     var replyText = typeof reply === "object" && reply !== null ? reply.text : reply;
     var showGallery = typeof reply === "object" && reply !== null && reply.gallery;
+    var replyChips = typeof reply === "object" && reply !== null && reply.chips ? reply.chips : null;
 
     const assistantMsg = {
       role: "assistant",
       content: replyText,
       createdAt: new Date().toISOString(),
       gallery: showGallery || false,
+      chips: replyChips,
     };
     conversation.push(assistantMsg);
     appendMessageEl(assistantMsg);
@@ -664,21 +689,29 @@
 
     // "Her Education?"
     if (lower.includes("her education") || lower.includes("education?")) {
-      return pick([
-        "Monica is currently pursuing a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 and expects to complete by 2028. Before that, she earned a Bachelor of Global Business and Digital Art from the University of Waterloo, attending from September 2023 to April 2025. She also participated in Cornell University's SCE Summer University Program in July 2023.",
-        "For her education, Monica began with the Summer University Program at Cornell University SCE in July 2023. She then went on to study Global Business and Digital Art at the University of Waterloo from September 2023 through April 2025. Currently, she's working toward a Bachelor of Science in Interaction Design at ArtCenter College of Design, having started in September 2025 with an expected graduation in 2028.",
-        "Monica's academic journey includes a Bachelor of Global Business and Digital Art from the University of Waterloo (September 2023 – April 2025), a Summer University Program at Cornell University SCE in July 2023, and her current studies — a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 and plans to finish by 2028.",
-        "Education-wise, Monica attended Cornell University's SCE Summer University Program in July 2023, then completed a Bachelor of Global Business and Digital Art at the University of Waterloo between September 2023 and April 2025. She's now enrolled at ArtCenter College of Design, pursuing a Bachelor of Science in Interaction Design from September 2025, with an expected graduation in 2028.",
-      ]);
+      return { text: pick([
+        "Monica is currently pursuing a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 and expects to complete by 2028. Before that, she earned a Bachelor of Global Business and Digital Art from the University of Waterloo, attending from September 2023 to April 2025. She also participated in Cornell University's SCE Summer University Program in July 2023. Before university, she attended St Mildred's-Lightbourn School.\n\nWould you like to learn more about any of these programs?",
+        "For her education, Monica attended St Mildred's-Lightbourn School before university, then began with the Summer University Program at Cornell University SCE in July 2023. She went on to study Global Business and Digital Art at the University of Waterloo from September 2023 through April 2025. Currently, she's working toward a Bachelor of Science in Interaction Design at ArtCenter College of Design, having started in September 2025 with an expected graduation in 2028.\n\nWould you like to learn more about any of these programs?",
+        "Monica's academic journey includes St Mildred's-Lightbourn School, a Summer University Program at Cornell University SCE in July 2023, a Bachelor of Global Business and Digital Art from the University of Waterloo (September 2023 \u2013 April 2025), and her current studies \u2014 a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 and plans to finish by 2028.\n\nWould you like to learn more about any of these programs?",
+        "Education-wise, Monica attended St Mildred's-Lightbourn School, then Cornell University's SCE Summer University Program in July 2023, followed by a Bachelor of Global Business and Digital Art at the University of Waterloo between September 2023 and April 2025. She's now enrolled at ArtCenter College of Design, pursuing a Bachelor of Science in Interaction Design from September 2025, with an expected graduation in 2028.\n\nWould you like to learn more about any of these programs?",
+      ]), chips: [
+        { label: "University of Waterloo", message: "Tell me about Monica's time at the University of Waterloo" },
+        { label: "Cornell SCE", message: "Tell me about Monica's experience at Cornell SCE" },
+        { label: "ArtCenter College of Design", message: "Tell me about Monica's studies at ArtCenter College of Design" },
+        { label: "St Mildred's-Lightbourn School", message: "Tell me about Monica's time at St Mildred's-Lightbourn School" },
+      ] };
     }
 
     // "Work Experience?" — initial prompt asks which internship
     if (lower.includes("work experience")) {
-      return pick([
-        "Monica has two internship experiences — one at Glou.co in 2022, and another at Beijing Zhongke Huilian Information Technology Co., Ltd. Which one would you like to know more about?",
+      return { text: pick([
+        "Monica has two internship experiences \u2014 one at Glou.co in 2022, and another at Beijing Zhongke Huilian Information Technology Co., Ltd. Which one would you like to know more about?",
         "Monica gained professional experience through two internships: one at Glou.co in 2022 and another at Beijing Zhongke Huilian Information Technology Co., Ltd. Which internship are you interested in hearing about?",
-        "When it comes to work experience, Monica completed two internships — one with Glou.co in 2022 and one with Beijing Zhongke Huilian Information Technology Co., Ltd. Would you like to hear about Glou.co or Beijing Zhongke Huilian?",
-      ]);
+        "When it comes to work experience, Monica completed two internships \u2014 one with Glou.co in 2022 and one with Beijing Zhongke Huilian Information Technology Co., Ltd. Would you like to hear about Glou.co or Beijing Zhongke Huilian?",
+      ]), chips: [
+        { label: "Glou.co", message: "Tell me about Monica's internship at Glou.co" },
+        { label: "Beijing Zhongke Huilian", message: "Tell me about Monica's internship at Beijing Zhongke Huilian" },
+      ] };
     }
 
     // Work Experience follow-ups — detect if the user is asking about a specific internship
@@ -715,7 +748,9 @@
         "One of Monica's most recent projects is Stockholm Dilemma (November 2025), where she worked as the Production Designer. The entire shoot and set setup took just 2 days. She focused on set design and costume coordination for a key dining scene, shaping the visual environment so that everything on screen — objects, food, characters — felt intentional and visually cohesive. Would you like to know more?",
         "In November 2025, Monica worked as Production Designer on Stockholm Dilemma. The project had a tight 2-day timeline for the full shoot and set setup. Her role involved designing the set and coordinating costumes for a central dining scene, with a major focus on a table filled with food that required careful composition planning for the camera. Want to hear more about it?",
         "Among Monica's projects, a standout is her work as Production Designer on Stockholm Dilemma, completed in November 2025. With only 2 days to set up and shoot everything, she was responsible for set design and costume coordination, making sure the visual environment felt intentional and cohesive on camera. A big part of the scene centered around a carefully composed table of food. Interested in learning more?",
-      ]), gallery: true };
+      ]), chips: [
+        { label: "Want to hear more about it?", message: "Tell me more about the Stockholm Dilemma project" },
+      ] };
     }
 
     // Project follow-ups — direct keyword match for set design / production design / film project / dining scene
@@ -824,8 +859,25 @@
       ]);
     }
 
+    // Individual school follow-ups (from education chips)
+    if (lower.includes("st mildred") || lower.includes("lightbourn")) {
+      return "Monica attended St Mildred's-Lightbourn School, an independent all-girls school in Oakville, Ontario, Canada. It provided her with a strong academic foundation and helped shape her creative interests before moving on to post-secondary education.";
+    }
+
+    if (lower.includes("waterloo")) {
+      return "Monica attended the University of Waterloo from September 2023 to April 2025, where she earned a Bachelor of Global Business and Digital Art. The program combined business fundamentals with digital art and design, giving her a unique interdisciplinary perspective that bridges creative and strategic thinking.";
+    }
+
+    if (lower.includes("cornell")) {
+      return "Monica participated in Cornell University's SCE Summer University Program in July 2023. This intensive summer program gave her exposure to an Ivy League academic environment and helped her explore her interests before starting her full-time studies at the University of Waterloo.";
+    }
+
+    if (lower.includes("artcenter")) {
+      return "Monica is currently pursuing a Bachelor of Science in Interaction Design at ArtCenter College of Design, which she started in September 2025 with an expected graduation in 2028. ArtCenter is renowned for its design programs, and Monica is focused on creating interactive experiences across both digital and physical mediums.";
+    }
+
     if (lower.includes("high school") || lower.includes("highschool")) {
-      return "Monica went to St Mildred's-Lightbourn School\nAn independent all-girls school in Oakville, Ontario Canada.";
+      return "Monica attended St Mildred's-Lightbourn School, an independent all-girls school in Oakville, Ontario, Canada.";
     }
 
     if (lower.includes("university") || lower.includes("college") || lower.includes("where did you study") || lower.includes("where do you study") || /what.*school/i.test(lower)) {
